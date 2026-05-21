@@ -115,6 +115,7 @@ export default function DashboardPage() {
           {[
             { icon: FileText, label: "My EPKs", href: "/dashboard", active: true },
             { icon: TrendingUp, label: "Analytics", href: "/dashboard/analytics" },
+            { icon: Globe, label: "Custom Domains", href: "/dashboard/domains" },
             { icon: Settings, label: "Settings", href: "/dashboard/settings" },
           ].map((item) => (
             <Link

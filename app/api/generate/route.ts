@@ -66,9 +66,8 @@ Return ONLY the bio text. No headings, no labels, no preamble.`;
     async start(controller) {
       try {
         const anthropicStream = await client.messages.stream({
-          model: "claude-opus-4-6",
+          model: process.env.ANTHROPIC_DEFAULT_SONNET_MODEL || "claude-sonnet-4-5",
           max_tokens: 1024,
-          thinking: { type: "adaptive" },
           system: [
             {
               type: "text",

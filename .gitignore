@@ -40,3 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .gstack/
+
+# Obscura binary symlinks (reference from local path via .env)
+bin/
+
+# Local profile storage (user data, not for version control)
+.profiles/

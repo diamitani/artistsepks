@@ -119,6 +119,15 @@ html {
   letter-spacing: 0.05em;
 }
 
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Template brand override (light) */
 .template-brand-bg {
   background: #F5F0EB;
