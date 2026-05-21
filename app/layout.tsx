@@ -42,28 +42,7 @@ export default function RootLayout({
               rel="noopener noreferrer"
               className="flex items-center gap-2.5 group"
             >
-              {/* Artispreneur logo mark */}
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 32 32"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="flex-shrink-0"
-              >
-                <rect width="32" height="32" rx="6" fill="#C0272D" />
-                <text
-                  x="16"
-                  y="22"
-                  textAnchor="middle"
-                  fill="#F5C100"
-                  fontSize="18"
-                  fontWeight="bold"
-                  fontFamily="Georgia, serif"
-                >
-                  A
-                </text>
-              </svg>
+              <img src="/artispreneur%20logo.png" alt="Artispreneur" width="20" height="20" className="w-5 h-5 rounded flex-shrink-0 object-contain" />
               <span className="text-[11px] text-[#777] group-hover:text-[#C0272D] transition-colors tracking-wider uppercase font-medium">
                 Powered by <span className="text-[#EDE9E0] group-hover:text-[#F5C100]">Artispreneur</span>
               </span>
