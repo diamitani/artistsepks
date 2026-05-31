@@ -47,3 +47,6 @@ bin/
 
 # Local profile storage (user data, not for version control)
 .profiles/
+
+# Supabase CLI temp files
+supabase/.temp/
