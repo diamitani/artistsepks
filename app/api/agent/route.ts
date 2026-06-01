@@ -57,13 +57,24 @@ async function executeTool(tool: ToolCall): Promise<string> {
 
 // ── Claude provider ────────────────────────────────────────────────────────────
 
-const claude = process.env.ANTHROPIC_DIRECT_API_KEY
-  ? new Anthropic({ apiKey: process.env.ANTHROPIC_DIRECT_API_KEY, baseURL: "https://api.anthropic.com" })
-  : new Anthropic();
-
 const CLAUDE_MODEL = process.env.ANTHROPIC_DEFAULT_SONNET_MODEL || "claude-sonnet-4-5";
-
 const ALL_CLAUDE_TOOLS = [EPK_UPDATE_TOOL, SPOTIFY_FETCH_TOOL, SOCIAL_SCRAPE_TOOL] as Anthropic.Tool[];
+
+// Lazy init — only construct if Claude is actually used
+let _claude: Anthropic | null = null;
+function getClaude(): Anthropic {
+  if (!_claude) {
+    const apiKey = process.env.ANTHROPIC_DIRECT_API_KEY || process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      throw new Error("Anthropic API key not configured. Set ANTHROPIC_DIRECT_API_KEY or ANTHROPIC_API_KEY, or use AI_PROVIDER=gemini");
+    }
+    _claude = new Anthropic({
+      apiKey,
+      baseURL: process.env.ANTHROPIC_DIRECT_API_KEY ? "https://api.anthropic.com" : undefined,
+    });
+  }
+  return _claude;
+}
 
 async function* streamClaudeWithTools(
   messages: Anthropic.MessageParam[]
@@ -76,6 +87,7 @@ async function* streamClaudeWithTools(
   while (round < MAX_ROUNDS) {
     round++;
 
+    const claude = getClaude();
     const response = await claude.messages.create({
       model: CLAUDE_MODEL,
       max_tokens: 4096,
@@ -262,9 +274,14 @@ export async function POST(request: NextRequest) {
       try {
         sendSSE(controller, encoder, { type: "status", status: "thinking" });
 
-        const generator = provider === "gemini" && genAI
-          ? streamGemini(normalised, contextSuffix)
-          : streamClaudeWithTools(normalised as Anthropic.MessageParam[]);
+        let generator;
+        if (provider === "gemini" && genAI) {
+          generator = streamGemini(normalised, contextSuffix);
+        } else if (provider === "gemini" && !genAI) {
+          throw new Error("Gemini selected (AI_PROVIDER=gemini) but GEMINI_API_KEY is not configured");
+        } else {
+          generator = streamClaudeWithTools(normalised as Anthropic.MessageParam[]);
+        }
 
         sendSSE(controller, encoder, { type: "status", status: "building" });
 
