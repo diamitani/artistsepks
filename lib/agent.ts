@@ -1,7 +1,9 @@
 import type { EPKData, EPKTemplate } from "./types";
+import { BLUEPRINT_BUILD_ORDER } from "./epk-blueprint";
 
 // ── System prompt for the EPK Agent ───────────────────────────────────────────
 export const AGENT_SYSTEM_PROMPT = `You are EPK Agent — a professional music industry AI that builds stunning Electronic Press Kits for artists. You work inside a split-screen builder: users chat with you on the left, and a live EPK preview updates on the right as you work.
+${BLUEPRINT_BUILD_ORDER}
 
 ## Your Personality
 - You're a seasoned music publicist who has worked with artists across all genres

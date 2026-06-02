@@ -4,6 +4,7 @@ import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { AGENT_SYSTEM_PROMPT, EPK_UPDATE_TOOL, SPOTIFY_FETCH_TOOL, SOCIAL_SCRAPE_TOOL } from "@/lib/agent";
 import { fetchSpotifyData } from "@/lib/spotify";
 import { scrapeSocialProfile } from "@/lib/social-scraper";
+import { streamDeepSeek, isConfigured as deepSeekConfigured, type DeepSeekTool } from "@/lib/deepseek";
 
 // ── Provider helpers ───────────────────────────────────────────────────────────
 
@@ -239,6 +240,178 @@ async function* streamGemini(messages: { role: string; content: string }[], epkC
   }
 }
 
+// ── DeepSeek provider ──────────────────────────────────────────────────────────
+
+function deepSeekTools(): DeepSeekTool[] {
+  const updateEpk: DeepSeekTool = {
+    type: "function",
+    function: {
+      name: "update_epk",
+      description: "Update the artist's Electronic Press Kit data. Call this to set or modify any field on the EPK.",
+      parameters: {
+        type: "object",
+        properties: {
+          template: { type: "string", enum: ["main", "booking", "brand"] },
+          artistName: { type: "string" },
+          artistTagline: { type: "string" },
+          genre: { type: "string" },
+          hometown: { type: "string" },
+          bio: { type: "string" },
+          shortBio: { type: "string" },
+          heroImageUrl: { type: "string" },
+          profileImageUrl: { type: "string" },
+          youtubeVideoId: { type: "string" },
+          spotifyArtistId: { type: "string" },
+          bookingEmail: { type: "string" },
+          stats: {
+            type: "object",
+            properties: {
+              spotifyListeners: { type: "string" },
+              youtubeSubscribers: { type: "string" },
+              youtubeViews: { type: "string" },
+              tiktokViews: { type: "string" },
+              instagramFollowers: { type: "string" },
+            },
+          },
+          releases: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                type: { type: "string", enum: ["Album", "EP", "Single", "Mixtape"] },
+                year: { type: "string" },
+                tracks: { type: "number" },
+                certification: { type: "string" },
+                coverUrl: { type: "string" },
+              },
+              required: ["title", "type", "year"],
+            },
+          },
+          timeline: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                year: { type: "string" },
+                title: { type: "string" },
+                description: { type: "string" },
+              },
+              required: ["year", "title", "description"],
+            },
+          },
+          pressQuotes: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                quote: { type: "string" },
+                publication: { type: "string" },
+              },
+              required: ["quote", "publication"],
+            },
+          },
+          socialLinks: {
+            type: "object",
+            properties: {
+              instagram: { type: "string" },
+              twitter: { type: "string" },
+              tiktok: { type: "string" },
+              youtube: { type: "string" },
+              spotify: { type: "string" },
+              website: { type: "string" },
+            },
+          },
+          accentColor: { type: "string" },
+        },
+      },
+    },
+  };
+
+  const spotifyTool: DeepSeekTool = {
+    type: "function",
+    function: {
+      name: "fetch_spotify_data",
+      description: "Fetch artist data from Spotify including discography, top tracks, genres, and follower count.",
+      parameters: {
+        type: "object",
+        properties: {
+          spotifyUrlOrId: { type: "string", description: "Spotify artist URL or ID" },
+        },
+        required: ["spotifyUrlOrId"],
+      },
+    },
+  };
+
+  return [updateEpk, spotifyTool];
+}
+
+async function* streamDeepSeekProvider(
+  messages: { role: string; content: string }[],
+  epkContext: string
+): AsyncGenerator<{ type: string; data: unknown }> {
+  if (!deepSeekConfigured()) {
+    throw new Error("DeepSeek API key not configured. Set DEEPSEEK_API_KEY in your environment.");
+  }
+
+  const tools = deepSeekTools();
+  const normalised = messages.map((m) => ({
+    role: m.role as "user" | "assistant" | "system",
+    content: m.role === "user" && m === messages[messages.length - 1]
+      ? m.content + epkContext
+      : m.content,
+  }));
+
+  // We handle tool calls in a loop (multi-round)
+  let currentMessages: any[] = [...normalised];
+  let round = 0;
+  const MAX_ROUNDS = 5;
+
+  while (round < MAX_ROUNDS) {
+    round++;
+
+    const generator = streamDeepSeek(currentMessages, tools, AGENT_SYSTEM_PROMPT);
+    const toolCalls: Array<{ id: string; name: string; input: unknown }> = [];
+
+    for await (const event of generator) {
+      if (event.type === "text") {
+        yield { type: "text", data: event.data };
+      } else if (event.type === "tool_call") {
+        const tc = event.data as { id: string; name: string; input: unknown };
+        if (tc.name === "update_epk") {
+          yield { type: "epk_update", data: tc.input };
+        } else {
+          toolCalls.push(tc);
+        }
+      } else if (event.type === "done") {
+        // Stream finished
+      }
+    }
+
+    if (toolCalls.length === 0) break;
+
+    // Execute tools and continue the conversation
+    for (const tc of toolCalls) {
+      const result = await executeTool(tc as ToolCall);
+      currentMessages.push({
+        role: "assistant",
+        content: "",
+        tool_calls: [{ id: tc.id, type: "function" as const, function: { name: tc.name, arguments: JSON.stringify(tc.input) } }],
+      } as any);
+      currentMessages.push({
+        role: "tool",
+        content: result,
+        tool_call_id: tc.id,
+      } as any);
+
+      if (tc.name === "fetch_spotify_data") {
+        try { yield { type: "spotify_data", data: JSON.parse(result) }; }
+        catch { yield { type: "spotify_data", data: { error: result } }; }
+      }
+    }
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // ██ POST handler
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -275,7 +448,12 @@ export async function POST(request: NextRequest) {
         sendSSE(controller, encoder, { type: "status", status: "thinking" });
 
         let generator;
-        if (provider === "gemini" && genAI) {
+        if (provider === "deepseek") {
+          if (!deepSeekConfigured()) {
+            throw new Error("DeepSeek selected (AI_PROVIDER=deepseek) but DEEPSEEK_API_KEY is not configured");
+          }
+          generator = streamDeepSeekProvider(normalised, contextSuffix);
+        } else if (provider === "gemini" && genAI) {
           generator = streamGemini(normalised, contextSuffix);
         } else if (provider === "gemini" && !genAI) {
           throw new Error("Gemini selected (AI_PROVIDER=gemini) but GEMINI_API_KEY is not configured");
