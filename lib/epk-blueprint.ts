@@ -171,22 +171,20 @@ function getNestedValue(obj: unknown, path: string): unknown {
 // ── Build instructions for AI agent ───────────────────────────────────────────
 
 export const BLUEPRINT_BUILD_ORDER = `
-## EPK Build Order (follow this exactly)
 
-1. Set template type (main / booking / brand)
-2. Set artist name + tagline + genre + hometown
-3. Set hero image + profile image (use Pexels if none provided)
-4. Set accent color (match brand or use template default)
-5. Populate stats bar (scrape from Spotify/social if URLs provided)
-6. Write bio + shortBio (AI-enhance from raw intake)
-7. Add music embeds (YouTube + Spotify from provided IDs)
-8. Build discography from releases data
-9. Build timeline from career milestones
-10. Add press quotes if available
+BUILD ORDER — after collecting data through the interview, build in this exact sequence:
+1. Set template (main / booking / brand)
+2. Set artist name, tagline, genre, hometown
+3. Set hero and profile images
+4. Set accent color
+5. Populate stats bar
+6. Write bio and shortBio
+7. Add music embeds
+8. Build discography
+9. Build timeline
+10. Add press quotes
 11. Add social links
-12. Set booking email + phone
-13. Add performance packages (booking template only)
-14. Add brand partners + value props (brand template only)
-
-Each step MUST call update_epk tool. Do not skip steps.
-`;
+12. Set booking email and phone
+13. Add performance packages if booking template
+14. Add brand partners if brand template
+Each step calls update_epk. Do not skip steps.`;
