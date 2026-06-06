@@ -22,14 +22,18 @@ function filePath(id: string): string {
 // ── Local file-based storage ───────────────────────────────────────────────────
 
 function localSave(profile: ArtistProfile): void {
-  ensureDir();
-  fs.writeFileSync(filePath(profile.id), JSON.stringify(profile, null, 2), "utf-8");
+  try {
+    ensureDir();
+    fs.writeFileSync(filePath(profile.id), JSON.stringify(profile, null, 2), "utf-8");
+  } catch {
+    // read-only filesystem (Vercel serverless) — Supabase sync handles persistence
+  }
 }
 
 function localLoad(id: string): ArtistProfile | null {
-  const fp = filePath(id);
-  if (!fs.existsSync(fp)) return null;
   try {
+    const fp = filePath(id);
+    if (!fs.existsSync(fp)) return null;
     return JSON.parse(fs.readFileSync(fp, "utf-8")) as ArtistProfile;
   } catch {
     return null;
@@ -42,17 +46,21 @@ function localDelete(id: string): void {
 }
 
 function localList(): ArtistProfile[] {
-  ensureDir();
-  return fs.readdirSync(PROFILES_DIR)
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => {
-      try {
-        return JSON.parse(fs.readFileSync(path.join(PROFILES_DIR, f), "utf-8")) as ArtistProfile;
-      } catch {
-        return null;
-      }
-    })
-    .filter(Boolean) as ArtistProfile[];
+  try {
+    ensureDir();
+    return fs.readdirSync(PROFILES_DIR)
+      .filter((f) => f.endsWith(".json"))
+      .map((f) => {
+        try {
+          return JSON.parse(fs.readFileSync(path.join(PROFILES_DIR, f), "utf-8")) as ArtistProfile;
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean) as ArtistProfile[];
+  } catch {
+    return []; // read-only filesystem (Vercel serverless)
+  }
 }
 
 // ── Supabase storage (when configured) ─────────────────────────────────────────
