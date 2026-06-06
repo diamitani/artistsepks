@@ -58,6 +58,9 @@ function Nav() {
             ))}
           </nav>
           <div className="hidden md:flex items-center gap-3">
+            <Button variant="outline" size="sm" asChild className="border-[#333]">
+              <Link href="/profile-wizard">Free Profile</Link>
+            </Button>
             <Button variant="ghost" size="sm" asChild><Link href="/auth/login">Sign In</Link></Button>
             <Button variant="gold" size="sm" asChild>
               <Link href="/builder">Create EPK <ChevronRight className="w-3.5 h-3.5" /></Link>

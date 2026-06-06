@@ -185,6 +185,46 @@ export default function BuilderPage() {
 
   // ── Load intake data on mount ───────────────────────────────────────────────
   useEffect(() => {
+    // First check for saved profile from profile-wizard
+    const savedUsername = localStorage.getItem("currentProfileUsername");
+    if (savedUsername) {
+      fetch(`/api/profile?username=${encodeURIComponent(savedUsername)}`)
+        .then((r) => r.json())
+        .then((profile) => {
+          if (profile?.id) {
+            const bg = profile.background || {};
+            const ct = profile.contact || {};
+            const social = profile.socialLinks || {};
+            if (bg.artistName) {
+              setEpk({
+                ...EMPTY_EPK,
+                artistName: bg.artistName,
+                genre: bg.genre,
+                hometown: bg.location,
+                bio: bg.bio || "",
+                shortBio: bg.bio?.slice(0, 160) || `${bg.artistName} is a ${bg.genre || ""} artist from ${bg.location || "their hometown"}.`,
+                bookingEmail: ct.email || profile.bookingEmail,
+                socialLinks: {
+                  instagram: social.instagram || undefined,
+                  tiktok: social.tiktok || undefined,
+                  youtube: social.youtube || undefined,
+                  spotify: social.spotify || undefined,
+                  website: social.website || ct.website || undefined,
+                },
+              });
+              setMessages([{
+                id: uid(),
+                role: "assistant",
+                content: `Welcome back, ${bg.artistName}! Your profile is loaded and ready. Want me to build your full EPK from here? I can pull your stats from Spotify and social media, write a press-ready bio, and set up your discography.`,
+                timestamp: Date.now(),
+              }]);
+            }
+          }
+        })
+        .catch(() => {});
+    }
+
+    // Then check for intake wizard data
     const intakeData = sessionStorage.getItem("intakeProfile");
     if (intakeData) {
       try {
@@ -209,7 +249,7 @@ export default function BuilderPage() {
           setMessages([{
             id: uid(),
             role: "assistant",
-            content: `👋 Welcome, **${bg.artistName}**! I've loaded your intake information. I can see you're ${bg.isProfessional ? "a professional" : "an aspiring"} ${bg.genre || "musician"} from ${bg.location || "your area"}. ${profile.goals?.primaryGoal ? `\n\nYour primary goal: *${profile.goals.primaryGoal}*` : ""}\n\nLet's build your EPK! What would you like to start with? I can enhance your bio, add your music, or set up your stats.`,
+            content: `Welcome, ${bg.artistName}! I've loaded your intake info. I see you're ${bg.isProfessional ? "a professional" : "an aspiring"} ${bg.genre || "musician"} from ${bg.location || "your area"}. ${profile.goals?.primaryGoal ? `Your main goal is ${profile.goals.primaryGoal}.` : ""} Let's build your EPK. What would you like to start with?`,
             timestamp: Date.now(),
           }]);
           sessionStorage.removeItem("intakeProfile");

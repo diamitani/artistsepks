@@ -180,6 +180,7 @@ export interface EngagementScore {
 export interface ArtistProfile {
   id: string;
   userId?: string;
+  username?: string;
   createdAt: string;
   updatedAt: string;
   intakeComplete: boolean;
