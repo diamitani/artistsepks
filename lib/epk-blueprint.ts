@@ -174,17 +174,20 @@ export const BLUEPRINT_BUILD_ORDER = `
 
 BUILD ORDER — after collecting data through the interview, build in this exact sequence:
 1. Set template (main / booking / brand)
-2. Set artist name, tagline, genre, hometown
-3. Set hero and profile images
-4. Set accent color
-5. Populate stats bar
-6. Write bio and shortBio
-7. Add music embeds
-8. Build discography
-9. Build timeline
-10. Add press quotes
-11. Add social links
-12. Set booking email and phone
-13. Add performance packages if booking template
-14. Add brand partners if brand template
+2. Set artist name, tagline, artist type, genre, hometown
+3. Set years active and influences
+4. Set hero and profile images
+5. Set accent color
+6. Populate stats bar (from Spotify/social scrapes)
+7. Write bio and shortBio
+8. Add music embeds (YouTube, Spotify, SoundCloud)
+9. Build discography from releases
+10. Build timeline from milestones
+11. Add press quotes and press links
+12. Add collaborators
+13. Add social links
+14. Set manager and label info
+15. Set booking email and phone
+16. Add performance packages if booking template
+17. Add brand partners if brand template
 Each step calls update_epk. Do not skip steps.`;

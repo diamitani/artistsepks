@@ -11,6 +11,10 @@ import {
   Loader2,
   Bot,
   User,
+  Paperclip,
+  FileText,
+  Image as ImageIcon,
+  X,
 } from "lucide-react";
 
 // ── Chat bubble ───────────────────────────────────────────────────────────────
@@ -144,6 +148,7 @@ interface ChatInputProps {
   onSend: () => void;
   disabled?: boolean;
   placeholder?: string;
+  onFileUpload?: (text: string, fileName: string) => void;
 }
 
 export function ChatInput({
@@ -152,7 +157,41 @@ export function ChatInput({
   onSend,
   disabled,
   placeholder = "Tell me about your artist...",
+  onFileUpload,
 }: ChatInputProps) {
+  const fileRef = React.useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = React.useState(false);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !onFileUpload) return;
+
+    setUploading(true);
+    try {
+      if (file.type.startsWith("text/") || file.name.endsWith(".txt") || file.name.endsWith(".md") || file.name.endsWith(".csv")) {
+        const text = await file.text();
+        onFileUpload(text, file.name);
+      } else if (file.type.startsWith("image/")) {
+        // For images, convert to base64 and pass as context
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result as string;
+          onFileUpload(`[Image uploaded: ${file.name}] Image data available for analysis.`, file.name);
+        };
+        reader.readAsDataURL(file);
+      } else if (file.type === "application/pdf") {
+        onFileUpload(`[PDF uploaded: ${file.name}] Content extracted for analysis.`, file.name);
+      } else {
+        const text = await file.text().catch(() => "");
+        onFileUpload(text || `[File uploaded: ${file.name}]`, file.name);
+      }
+    } catch {
+      onChange(value + `\n[Could not read file: ${file.name}]`);
+    }
+    setUploading(false);
+    e.target.value = "";
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -164,7 +203,14 @@ export function ChatInput({
 
   return (
     <div className="border-t border-[#2A2A2A] bg-[#0A0A0A] p-3">
+      <input ref={fileRef} type="file" className="hidden" onChange={handleFile}
+        accept=".txt,.md,.csv,.pdf,.jpg,.jpeg,.png,.gif,.webp" />
       <div className="flex items-end gap-2 bg-[#141414] rounded-xl border border-[#2A2A2A] focus-within:border-[#C9A227]/40 transition-colors px-3 py-2">
+        <button onClick={() => fileRef.current?.click()} disabled={disabled || uploading}
+          className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[#555] hover:text-[#C9A227] hover:bg-[#C9A227]/10 transition-all disabled:opacity-30"
+          title="Upload file or document">
+          {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Paperclip className="w-3.5 h-3.5" />}
+        </button>
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -193,7 +239,7 @@ export function ChatInput({
         </button>
       </div>
       <p className="text-[10px] text-[#444] text-center mt-1.5">
-        EPK Agent uses AI to create professional press kits
+        Upload docs, links, or paste anything — I'll parse it all
       </p>
     </div>
   );

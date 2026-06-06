@@ -672,6 +672,10 @@ export default function BuilderPage() {
                     ? "Tell me about your artist..."
                     : "Ask for changes or add details..."
                 }
+                onFileUpload={(text, fileName) => {
+                  const msg = `I've uploaded a file: ${fileName}\n\n--- File Contents ---\n${text}\n\n---\nPlease analyze this and use the information to build or update my EPK.`;
+                  setInput(msg);
+                }}
               />
             </motion.aside>
           )}
