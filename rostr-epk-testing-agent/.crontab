@@ -1,6 +1,6 @@
 # Daily smoke test for ArtistEPKs.com — runs at 6:00 AM every day
 # Output logged to rostr-hub/state/daily.log for review
-0 6 * * * cd /Users/patmini/artistsepks/rostr-epk-testing-agent && SITE_URL=https://artistsepks.com bash rostr-hub/tools/scripts/run-all-tests.sh >> rostr-hub/state/daily.log 2>&1
+0 6 * * * cd /Users/patmini/artistsepks/rostr-epk-testing-agent && SITE_URL=https://artistsepks.vercel.app bash rostr-hub/tools/scripts/run-all-tests.sh >> rostr-hub/state/daily.log 2>&1
 
 # Weekly full regression — runs at 7:00 AM every Monday
-0 7 * * 1 cd /Users/patmini/artistsepks/rostr-epk-testing-agent && SITE_URL=https://artistsepks.com bash rostr-hub/tools/scripts/run-all-tests.sh >> rostr-hub/state/weekly.log 2>&1
+0 7 * * 1 cd /Users/patmini/artistsepks/rostr-epk-testing-agent && SITE_URL=https://artistsepks.vercel.app bash rostr-hub/tools/scripts/run-all-tests.sh >> rostr-hub/state/weekly.log 2>&1

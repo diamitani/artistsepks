@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-SITE_URL="${SITE_URL:-https://artistsepks.com}"
+SITE_URL="${SITE_URL:-https://artistsepks.vercel.app}"
 TIMEOUT="${TEST_TIMEOUT:-30000}"
 PASSED=0
 FAILED=0

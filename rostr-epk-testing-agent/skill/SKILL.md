@@ -35,7 +35,7 @@ bash rostr-hub/tools/scripts/test-api-endpoints.sh
 
 ## Configuration
 
-Set `SITE_URL` to target a deployment (default: `https://artistsepks.com`).
+Set `SITE_URL` to target a deployment (default: `https://artistsepks.vercel.app`).
 
 ## Requirements
 

@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-SITE_URL="${SITE_URL:-https://artistsepks.com}"
+SITE_URL="${SITE_URL:-https://artistsepks.vercel.app}"
 PASSED=0
 FAILED=0
 TOTAL=0

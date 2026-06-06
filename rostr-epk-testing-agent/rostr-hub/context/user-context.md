@@ -7,7 +7,7 @@ SITE_URL="http://localhost:3000"
 
 For production/staging deployments (when live):
 ```bash
-export SITE_URL="https://artistsepks.com"
+export SITE_URL="https://artistsepks.vercel.app"
 # or a Vercel preview:
 export SITE_URL="https://frontend-<branch>-<hash>.vercel.app"
 ```

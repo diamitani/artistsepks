@@ -21,7 +21,7 @@ function renderStats(data: EPKData, accent: string): string {
     { key: "youtubeViews", label: "YouTube Views" },
     { key: "tiktokViews", label: "TikTok Views" },
     { key: "instagramFollowers", label: "Instagram" },
-  ].filter((s) => (data.stats as Record<string, string>)[s.key]);
+  ].filter((s) => data.stats && (data.stats as Record<string, string>)[s.key]);
 
   if (stats.length === 0) return "";
 

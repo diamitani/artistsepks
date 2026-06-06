@@ -5,7 +5,9 @@ import { execSync, ChildProcess, spawn } from "child_process";
 import * as puppeteer from "puppeteer-core";
 import path from "path";
 
-const OBSCURA_BIN = process.env.OBSCURA_PATH || path.join(process.cwd(), "bin", "obscura");
+function getObscuraBin(): string {
+  return process.env.OBSCURA_PATH || path.join(process.cwd(), "bin", "obscura");
+}
 const OBSCURA_PORT = 9922; // different from default to avoid conflicts
 
 let obscuraProcess: ChildProcess | null = null;
@@ -205,7 +207,7 @@ async function scrapeTwitter(page: puppeteer.Page, handle: string): Promise<Soci
 
 function isObscuraAvailable(): boolean {
   try {
-    execSync(`"${OBSCURA_BIN}" --help`, { stdio: "ignore" });
+    execSync(`"${getObscuraBin()}" --help`, { stdio: "ignore" });
     return true;
   } catch {
     return false;
@@ -219,7 +221,7 @@ async function startObscura(): Promise<string> {
       return;
     }
 
-    obscuraProcess = spawn(OBSCURA_BIN, ["serve", "--port", String(OBSCURA_PORT)], {
+    obscuraProcess = spawn(getObscuraBin(), ["serve", "--port", String(OBSCURA_PORT)], {
       stdio: ["ignore", "pipe", "pipe"],
     });
 
@@ -273,7 +275,7 @@ export async function scrapeSocialProfile(url: string): Promise<SocialProfile> {
 
   if (!isObscuraAvailable()) {
     throw new Error(
-      `Obscura not found at ${OBSCURA_BIN}. Download from https://github.com/h4ckf0r0day/obscura`
+      `Obscura not found at ${getObscuraBin()}. Download from https://github.com/h4ckf0r0day/obscura`
     );
   }
 

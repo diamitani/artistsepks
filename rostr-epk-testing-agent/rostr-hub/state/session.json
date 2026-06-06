@@ -1,18 +1,99 @@
 {
-  "session_id": "",
-  "last_run": null,
-  "site_url": "",
-  "status": "idle",
-  "suites": {},
+  "run_id": "2026-06-06T07:20:52Z",
+  "site_url": "http://localhost:3000",
+  "timestamp": "2026-06-06T07:20:52Z",
+  "suites": {
+  "test-landing-page": {
+    "status": "pass",
+    "tests": {
+      "passed": 6,
+      "failed": 0,
+      "total": 6,
+      "skipped": 0
+    }
+  },
+  "test-epk-pages": {
+    "status": "pass",
+    "tests": {
+      "passed": 7,
+      "failed": 0,
+      "total": 7,
+      "skipped": 0
+    }
+  },
+  "test-profile-pages": {
+    "status": "pass",
+    "tests": {
+      "passed": 4,
+      "failed": 0,
+      "total": 4,
+      "skipped": 0
+    }
+  },
+  "test-api-endpoints": {
+    "status": "pass",
+    "tests": {
+      "passed": 13,
+      "failed": 0,
+      "total": 13,
+      "skipped": 0
+    }
+  },
+  "test-builder-flow": {
+    "status": "pass",
+    "tests": {
+      "passed": 5,
+      "failed": 0,
+      "total": 5,
+      "skipped": 0
+    }
+  },
+  "test-auth-flow": {
+    "status": "pass",
+    "tests": {
+      "passed": 4,
+      "failed": 0,
+      "total": 4,
+      "skipped": 0
+    }
+  },
+  "test-export-features": {
+    "status": "pass",
+    "tests": {
+      "passed": 3,
+      "failed": 0,
+      "total": 3,
+      "skipped": 0
+    }
+  },
+  "test-social-spotify": {
+    "status": "pass",
+    "tests": {
+      "passed": 5,
+      "failed": 0,
+      "total": 5,
+      "skipped": 0
+    }
+  },
+  "test-error-handling": {
+    "status": "pass",
+    "tests": {
+      "passed": 9,
+      "failed": 0,
+      "total": 9,
+      "skipped": 0
+    }
+  }
+},
   "summary": {
-    "passed": 0,
+    "passed": 56,
     "failed": 0,
-    "total": 0,
+    "total": 56,
     "skipped": 0
   },
   "cold_starts": [],
   "new_discoveries": [],
   "blocking": false,
-  "started_at": null,
-  "completed_at": null
+  "started_at": "2026-06-06T07:20:52Z",
+  "completed_at": "2026-06-06T07:21:24Z"
 }

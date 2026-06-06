@@ -4,7 +4,7 @@
 
 ```bash
 # 1. Set the target URL
-export SITE_URL="https://artistsepks.com"
+export SITE_URL="https://artistsepks.vercel.app"
 
 # 2. Run the full test suite
 bash rostr-hub/tools/scripts/run-all-tests.sh
@@ -50,7 +50,7 @@ Results are written to `rostr-hub/state/session.json` in this format:
 ```json
 {
   "run_id": "2026-06-06T12:00:00Z",
-  "site_url": "https://artistsepks.com",
+  "site_url": "https://artistsepks.vercel.app",
   "suites": { "...": { "status": "pass", "tests": { "passed": N, "failed": N, "total": N } } },
   "summary": { "passed": N, "failed": N, "total": N },
   "blocking": true|false
@@ -61,7 +61,7 @@ Results are written to `rostr-hub/state/session.json` in this format:
 
 ```bash
 # Run tests daily at 6 AM
-echo "0 6 * * * cd /path/to/rostr-epk-testing-agent && SITE_URL=https://artistsepks.com bash rostr-hub/tools/scripts/run-all-tests.sh >> rostr-hub/state/daily.log 2>&1" | crontab -
+echo "0 6 * * * cd /path/to/rostr-epk-testing-agent && SITE_URL=https://artistsepks.vercel.app bash rostr-hub/tools/scripts/run-all-tests.sh >> rostr-hub/state/daily.log 2>&1" | crontab -
 ```
 
 ## Running Against Preview Deployments

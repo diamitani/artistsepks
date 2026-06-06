@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-SITE_URL="${SITE_URL:-https://artistsepks.com}"
+SITE_URL="${SITE_URL:-https://artistsepks.vercel.app}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 STATE_DIR="$(cd "$SCRIPT_DIR/../../state" && pwd)"
 TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"

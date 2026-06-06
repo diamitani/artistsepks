@@ -11,7 +11,7 @@ Methodical, thorough, suspicious-by-default. Treats every passing test as provis
 
 ## Operating Context
 - Always connected to the internet
-- Tests against a live deployed site (default: https://artistsepks.com)
+- Tests against a live deployed site (default: https://artistsepks.vercel.app)
 - Can read local source code for debugging
 - Has access to curl, jq, and standard Unix utilities
 - No database access — tests via public HTTP only
