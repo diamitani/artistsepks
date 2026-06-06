@@ -1,0 +1,29 @@
+name: rostr-epk-testing-agent
+version: 1.0.0
+type: testing
+description: End-to-end testing agent for ArtistEPKs.com
+
+system_instructions: ../system-instructions.md
+
+hub:
+  context:
+    - ../rostr-hub/context/identity.md
+    - ../rostr-hub/context/domain-knowledge.md
+    - ../rostr-hub/context/user-context.md
+  state:
+    session: ../rostr-hub/state/session.json
+    memory: ../rostr-hub/state/memory.jsonl
+    decisions: ../rostr-hub/state/decisions.md
+    learnings: ../rostr-hub/state/learnings.jsonl
+  tools:
+    - ../rostr-hub/tools/tool-manifest.yaml
+    - ../rostr-hub/tools/scripts/run-all-tests.sh
+    - ../rostr-hub/tools/scripts/test-landing-page.sh
+    - ../rostr-hub/tools/scripts/test-epk-pages.sh
+    - ../rostr-hub/tools/scripts/test-profile-pages.sh
+    - ../rostr-hub/tools/scripts/test-api-endpoints.sh
+    - ../rostr-hub/tools/scripts/test-builder-flow.sh
+    - ../rostr-hub/tools/scripts/test-auth-flow.sh
+    - ../rostr-hub/tools/scripts/test-export-features.sh
+    - ../rostr-hub/tools/scripts/test-social-spotify.sh
+    - ../rostr-hub/tools/scripts/test-error-handling.sh

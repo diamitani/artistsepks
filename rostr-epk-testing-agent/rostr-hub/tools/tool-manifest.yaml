@@ -1,0 +1,51 @@
+# Tool Manifest — EPK Testing Agent
+
+tools:
+  - name: run-tests
+    description: Run the full test suite or a specific suite
+    scripts:
+      - scripts/run-all-tests.sh
+      - scripts/test-landing-page.sh
+      - scripts/test-epk-pages.sh
+      - scripts/test-profile-pages.sh
+      - scripts/test-api-endpoints.sh
+      - scripts/test-builder-flow.sh
+      - scripts/test-auth-flow.sh
+      - scripts/test-export-features.sh
+      - scripts/test-social-spotify.sh
+      - scripts/test-error-handling.sh
+
+  - name: report
+    description: Generate a structured JSON test report
+    output: state/session.json
+
+  - name: discover
+    description: Probe unknown routes and register discoveries
+    behavior: dynamic
+
+  - name: learn
+    description: Log findings to memory and learnings
+    targets:
+      - state/memory.jsonl
+      - state/learnings.jsonl
+
+error_handling:
+  cold_start:
+    retry: true
+    max_retries: 2
+    delay_ms: 5000
+  timeout:
+    retry: false
+    escalate: true
+  http_5xx:
+    retry: false
+    escalate: true
+  http_4xx:
+    retry: false
+    escalate: false
+    expected_for:
+      - /api/epk        # Unauthenticated → 401
+      - /api/profile    # Unauthenticated → 401
+      - /api/domains    # Unauthenticated → 401
+      - /builder        # Unauthenticated → redirect 307
+      - /dashboard      # Unauthenticated → redirect 307

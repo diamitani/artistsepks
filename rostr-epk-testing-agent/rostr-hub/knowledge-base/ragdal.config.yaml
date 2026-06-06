@@ -1,0 +1,10 @@
+# RAG DAL Configuration — EPK Testing Agent
+# No external knowledge retrieval needed. All domain knowledge
+# is embedded in the system instructions and context files.
+
+enabled: false
+reasoning: >
+  The testing agent operates against the live site via HTTP.
+  All knowledge about site structure, URLs, and expected
+  behaviors is provided statically in system-instructions.md
+  and context files. RAG is unnecessary.

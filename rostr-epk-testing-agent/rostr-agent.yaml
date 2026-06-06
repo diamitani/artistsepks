@@ -1,0 +1,35 @@
+name: rostr-epk-testing-agent
+version: 1.0.0
+type: testing-agent
+description: ROSTR-powered end-to-end testing agent for ArtistEPKs.com — validates public pages, API endpoints, auth flows, builder, export features, and integrations
+framework: rostr
+rostr_version: 1.0.0
+
+agent:
+  identity: rostr-epk-testing-agent
+  model_recommendation: claude-sonnet-4-20250514
+  system_instructions: system-instructions.md
+  max_turns: 100
+
+capabilities:
+  testing:
+    - functional: HTTP status, response shape, content presence
+    - integration: API endpoint chaining, auth session, data flow
+    - e2e: Page load, redirect, form submission, streaming
+    - regression: Run all suites, compare against baseline
+  coverage:
+    - landing_pages: ["/", "/auth/login", "/auth/signup"]
+    - public_pages: ["/epk/{slug}", "/{username}"]
+    - builder: ["/builder", "/builder/intake", "/dashboard"]
+    - api_endpoints: ["/api/epk", "/api/profile", "/api/agent", "/api/upload", "/api/export/html", "/api/pdf/render", "/api/venues", "/api/spotify", "/api/social", "/api/social/dashboard", "/api/pexels", "/api/domains", "/api/generate"]
+    - export: ["pdf", "html"]
+    - integrations: ["spotify", "social-scraper", "pexels", "supabase"]
+    - edge_cases: ["404", "demo-mode", "cold-start", "missing-env", "invalid-slug"]
+  dynamic_discovery: true
+
+deployment:
+  platform: standalone
+  vars:
+    SITE_URL: "http://localhost:3000"
+    TEST_TIMEOUT: 30000
+    MAX_COLD_START_RETRIES: 2

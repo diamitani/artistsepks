@@ -1,0 +1,32 @@
+name: rostr-epk-testing-agent
+version: 1.0.0
+type: testing
+framework: rostr
+rostr_version: 1.0.0
+
+hub:
+  context:
+    - context/identity.md
+    - context/domain-knowledge.md
+    - context/user-context.md
+  state:
+    session: state/session.json
+    memory: state/memory.jsonl
+    decisions: state/decisions.md
+    learnings: state/learnings.jsonl
+  knowledge_base:
+    config: knowledge-base/ragdal.config.yaml
+    sources:
+      - knowledge-base/sources/site-structure.md
+  tools:
+    - tools/tool-manifest.yaml
+    - tools/scripts/run-all-tests.sh
+    - tools/scripts/test-landing-page.sh
+    - tools/scripts/test-epk-pages.sh
+    - tools/scripts/test-profile-pages.sh
+    - tools/scripts/test-api-endpoints.sh
+    - tools/scripts/test-builder-flow.sh
+    - tools/scripts/test-auth-flow.sh
+    - tools/scripts/test-export-features.sh
+    - tools/scripts/test-social-spotify.sh
+    - tools/scripts/test-error-handling.sh

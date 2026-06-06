@@ -1,9 +1,11 @@
 import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
-import { AGENT_SYSTEM_PROMPT, EPK_UPDATE_TOOL, SPOTIFY_FETCH_TOOL, SOCIAL_SCRAPE_TOOL } from "@/lib/agent";
+import { AGENT_SYSTEM_PROMPT, EPK_UPDATE_TOOL, SPOTIFY_FETCH_TOOL, SOCIAL_SCRAPE_TOOL, FETCH_PAGE_TOOL, ADD_RIDER_TOOL } from "@/lib/agent";
 import { fetchSpotifyData } from "@/lib/spotify";
 import { scrapeSocialProfile } from "@/lib/social-scraper";
+import { fetchPageText } from "@/lib/fetch-page";
+import { getRiderById, getRiderSet } from "@/lib/riders";
 import { streamDeepSeek, isConfigured as deepSeekConfigured, type DeepSeekTool } from "@/lib/deepseek";
 
 // ── Provider helpers ───────────────────────────────────────────────────────────
@@ -53,13 +55,41 @@ async function executeTool(tool: ToolCall): Promise<string> {
     }
   }
 
+  if (tool.name === "fetch_page") {
+    const url = tool.input.url as string;
+    if (!url) return JSON.stringify({ error: "No URL provided" });
+    try {
+      const text = await fetchPageText(url);
+      return JSON.stringify({ url, content: text.slice(0, 8000) });
+    } catch (err) {
+      return JSON.stringify({ error: err instanceof Error ? err.message : "Page fetch failed" });
+    }
+  }
+
+  if (tool.name === "add_rider") {
+    const riderType = tool.input.riderType as string;
+    const level = tool.input.level as string;
+    const notes = tool.input.notes as string || "";
+    const set = riderType === "backline" ? (level === "full" ? "festival" : "club") : "club";
+    const riders = getRiderSet(riderType === "backline" ? "club" : "club");
+    const rider = riders.find((r) => r.id.includes(riderType));
+    if (!rider) return JSON.stringify({ error: `No rider found for ${riderType} ${level}` });
+    return JSON.stringify({
+      riderType,
+      level,
+      category: rider.name,
+      items: rider.items,
+      notes,
+    });
+  }
+
   return JSON.stringify({ error: `Unknown tool: ${tool.name}` });
 }
 
 // ── Claude provider ────────────────────────────────────────────────────────────
 
 const CLAUDE_MODEL = process.env.ANTHROPIC_DEFAULT_SONNET_MODEL || "claude-sonnet-4-5";
-const ALL_CLAUDE_TOOLS = [EPK_UPDATE_TOOL, SPOTIFY_FETCH_TOOL, SOCIAL_SCRAPE_TOOL] as Anthropic.Tool[];
+const ALL_CLAUDE_TOOLS = [EPK_UPDATE_TOOL, SPOTIFY_FETCH_TOOL, SOCIAL_SCRAPE_TOOL, FETCH_PAGE_TOOL, ADD_RIDER_TOOL] as Anthropic.Tool[];
 
 // Lazy init — only construct if Claude is actually used
 let _claude: Anthropic | null = null;
@@ -343,7 +373,54 @@ function deepSeekTools(): DeepSeekTool[] {
     },
   };
 
-  return [updateEpk, spotifyTool];
+  const fetchPageTool: DeepSeekTool = {
+    type: "function",
+    function: {
+      name: "fetch_page",
+      description: "Read the text content of a web page or URL.",
+      parameters: {
+        type: "object",
+        properties: {
+          url: { type: "string", description: "Full URL to fetch" },
+        },
+        required: ["url"],
+      },
+    },
+  };
+
+  const socialScrapeTool: DeepSeekTool = {
+    type: "function",
+    function: {
+      name: "scrape_social_profile",
+      description: "Scrape follower counts and engagement data from a social media profile URL.",
+      parameters: {
+        type: "object",
+        properties: {
+          url: { type: "string", description: "Social media profile URL" },
+        },
+        required: ["url"],
+      },
+    },
+  };
+
+  const addRiderTool: DeepSeekTool = {
+    type: "function",
+    function: {
+      name: "add_rider",
+      description: "Add a technical rider (sound, lighting, backline, hospitality) to the EPK.",
+      parameters: {
+        type: "object",
+        properties: {
+          riderType: { type: "string", enum: ["backline", "sound", "lighting", "hospitality"] },
+          level: { type: "string", enum: ["basic", "full"] },
+          notes: { type: "string" },
+        },
+        required: ["riderType", "level"],
+      },
+    },
+  };
+
+  return [updateEpk, spotifyTool, fetchPageTool, socialScrapeTool, addRiderTool];
 }
 
 async function* streamDeepSeekProvider(

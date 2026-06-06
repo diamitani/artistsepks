@@ -1,0 +1,18 @@
+{
+  "session_id": "",
+  "last_run": null,
+  "site_url": "",
+  "status": "idle",
+  "suites": {},
+  "summary": {
+    "passed": 0,
+    "failed": 0,
+    "total": 0,
+    "skipped": 0
+  },
+  "cold_starts": [],
+  "new_discoveries": [],
+  "blocking": false,
+  "started_at": null,
+  "completed_at": null
+}
