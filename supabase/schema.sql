@@ -1,79 +1,144 @@
--- EPK Agent Database Schema
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- EPK Agent — Complete Database Schema
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- Run the entire file in Supabase SQL Editor to set up all tables.
+-- Or use:  supabase migration up
+-- ============================================================
 
--- Enable UUID extension
-create extension if not exists "uuid-ossp";
+-- ── 1. Extensions ──────────────────────────────────────────────────────────────
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- EPKs table
-create table if not exists epks (
-  id uuid primary key default uuid_generate_v4(),
-  slug text not null unique,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  template text not null check (template in ('main', 'booking', 'brand')),
-  data jsonb not null default '{}',
-  views integer not null default 0,
-  downloads integer not null default 0,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+-- ── 2. Profiles Table ─────────────────────────────────────────────────────────
+-- Stores artist intake/wizard data (ArtistProfile type)
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  profile_data JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Index for fast user lookups
-create index if not exists epks_user_id_idx on epks(user_id);
--- Index for slug lookups
-create index if not exists epks_slug_idx on epks(slug);
+CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_created_at ON profiles(created_at DESC);
 
--- Auto-update updated_at
-create or replace function update_updated_at()
-returns trigger as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$ language plpgsql;
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
-create trigger epks_updated_at
-  before update on epks
-  for each row execute function update_updated_at();
+CREATE POLICY "Users can view own profile"
+  ON profiles FOR SELECT USING (auth.uid() = user_id);
 
--- RLS policies
-alter table epks enable row level security;
+CREATE POLICY "Users can insert own profile"
+  ON profiles FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Users can read their own EPKs
-create policy "Users can view own EPKs"
-  on epks for select
-  using (auth.uid() = user_id);
+CREATE POLICY "Users can update own profile"
+  ON profiles FOR UPDATE USING (auth.uid() = user_id);
 
--- Anyone can view a published EPK by slug (public EPK pages)
-create policy "Public EPK pages are readable"
-  on epks for select
-  using (true);
+CREATE POLICY "Users can delete own profile"
+  ON profiles FOR DELETE USING (auth.uid() = user_id);
 
--- Users can insert their own EPKs
-create policy "Users can create EPKs"
-  on epks for insert
-  with check (auth.uid() = user_id);
+-- ── 3. EPKs Table ──────────────────────────────────────────────────────────────
+-- Stores the actual Electronic Press Kit with all data as JSONB
+CREATE TABLE IF NOT EXISTS epks (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  slug TEXT NOT NULL UNIQUE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  template TEXT NOT NULL CHECK (template IN ('main', 'booking', 'brand')),
+  data JSONB NOT NULL DEFAULT '{}'::jsonb,
+  views INTEGER NOT NULL DEFAULT 0,
+  downloads INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
--- Users can update their own EPKs
-create policy "Users can update own EPKs"
-  on epks for update
-  using (auth.uid() = user_id);
+CREATE INDEX IF NOT EXISTS epks_user_id_idx ON epks(user_id);
+CREATE INDEX IF NOT EXISTS epks_slug_idx ON epks(slug);
+CREATE INDEX IF NOT EXISTS epks_created_at_idx ON epks(created_at DESC);
+CREATE INDEX IF NOT EXISTS epks_data_gin_idx ON epks USING GIN (data);
 
--- Users can delete their own EPKs
-create policy "Users can delete own EPKs"
-  on epks for delete
-  using (auth.uid() = user_id);
+ALTER TABLE epks ENABLE ROW LEVEL SECURITY;
 
--- View increment function (called via rpc, bypasses RLS for the counter)
-create or replace function increment_epk_views(epk_slug text)
-returns void as $$
-begin
-  update epks set views = views + 1 where slug = epk_slug;
-end;
-$$ language plpgsql security definer;
+CREATE POLICY "Users can view own EPKs"
+  ON epks FOR SELECT USING (auth.uid() = user_id);
 
--- Download increment function
-create or replace function increment_epk_downloads(epk_slug text)
-returns void as $$
-begin
-  update epks set downloads = downloads + 1 where slug = epk_slug;
-end;
-$$ language plpgsql security definer;
+CREATE POLICY "Public EPK pages are readable"
+  ON epks FOR SELECT USING (true);
+
+CREATE POLICY "Users can create EPKs"
+  ON epks FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own EPKs"
+  ON epks FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own EPKs"
+  ON epks FOR DELETE USING (auth.uid() = user_id);
+
+-- ── 4. Domains Table ───────────────────────────────────────────────────────────
+-- Custom domain mapping for EPK URLs
+CREATE TABLE IF NOT EXISTS domains (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  domain TEXT NOT NULL UNIQUE,
+  epk_slug TEXT NOT NULL,
+  verified BOOLEAN NOT NULL DEFAULT FALSE,
+  verified_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_domains_user_id ON domains(user_id);
+CREATE INDEX IF NOT EXISTS idx_domains_domain ON domains(domain);
+
+ALTER TABLE domains ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own domains"
+  ON domains FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own domains"
+  ON domains FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own domains"
+  ON domains FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own domains"
+  ON domains FOR DELETE USING (auth.uid() = user_id);
+
+-- ── 5. Updated-at Trigger Function ─────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Apply to all tables
+DROP TRIGGER IF EXISTS set_profiles_updated_at ON profiles;
+CREATE TRIGGER set_profiles_updated_at
+  BEFORE UPDATE ON profiles
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS epks_updated_at ON epks;
+CREATE TRIGGER epks_updated_at
+  BEFORE UPDATE ON epks
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DROP TRIGGER IF EXISTS set_domains_updated_at ON domains;
+CREATE TRIGGER set_domains_updated_at
+  BEFORE UPDATE ON domains
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ── 6. RPC Functions ───────────────────────────────────────────────────────────
+-- Counter increments (bypass RLS via security definer)
+
+CREATE OR REPLACE FUNCTION increment_epk_views(epk_slug TEXT)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE epks SET views = views + 1 WHERE slug = epk_slug;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION increment_epk_downloads(epk_slug TEXT)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE epks SET downloads = downloads + 1 WHERE slug = epk_slug;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

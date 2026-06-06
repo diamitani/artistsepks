@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import {
   User, FileText, Target, Briefcase, Clock, CheckCircle2,
-  ArrowRight, ArrowLeft, Save, Loader2, Sparkles
+  ArrowRight, ArrowLeft, Save, Loader2, Sparkles, Home
 } from "lucide-react";
 import type { ArtistProfile } from "@/lib/types";
 
@@ -76,12 +77,32 @@ export function IntakeWizard({ profile, onSave, onComplete }: Props) {
       {/* Header */}
       <div className="px-6 py-4 border-b border-[#1E1E1E]">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#C9A227] to-[#E8C840] flex items-center justify-center">
+          <div className="flex items-center gap-1 mr-2 flex-shrink-0">
+            <Link
+              href="/"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] text-[#666] hover:text-[#C9A227] hover:bg-[#1E1E1E] transition-all"
+              title="Home"
+            >
+              <Home className="w-3 h-3" />
+              Home
+            </Link>
+            <span className="text-[#333] text-[10px]">/</span>
+            <Link
+              href="/dashboard"
+              className="px-2 py-1.5 rounded-lg text-[10px] text-[#666] hover:text-[#C9A227] hover:bg-[#1E1E1E] transition-all"
+              title="Dashboard"
+            >
+              Dashboard
+            </Link>
+            <span className="text-[#333] text-[10px]">/</span>
+            <span className="text-[10px] text-[#444] px-1">Intake</span>
+          </div>
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#C9A227] to-[#E8C840] flex items-center justify-center flex-shrink-0">
             <Sparkles className="w-4 h-4 text-[#050505]" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h2 className="font-display text-sm tracking-wider text-[#EDE9E0]">Artist Intake</h2>
-            <p className="text-[10px] text-[#666]">Tell us about yourself so we can build the perfect EPK</p>
+            <p className="text-[10px] text-[#666] truncate">Tell us about yourself so we can build the perfect EPK</p>
           </div>
         </div>
 
