@@ -501,7 +501,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const provider = process.env.AI_PROVIDER || "claude";
+  const provider = process.env.AI_PROVIDER || "deepseek";
   const contextSuffix = epkData
     ? `\n\n[Current EPK state: ${JSON.stringify(epkData)}]`
     : "";
@@ -521,7 +521,8 @@ export async function POST(request: NextRequest) {
       try {
         sendSSE(controller, encoder, { type: "status", status: "thinking" });
 
-        // Build fallback provider chain — try configured provider first, then fallbacks
+        // Build fallback provider chain — DeepSeek primary (as configured), Gemini only as last resort.
+        // Claude is NOT used as an AI provider for the agent.
         const attempts: Array<{
           name: string;
           init: () => AsyncGenerator<{ type: string; data: unknown }>;
@@ -529,18 +530,18 @@ export async function POST(request: NextRequest) {
 
         if (provider === "deepseek" && deepSeekConfigured()) {
           attempts.push({ name: "DeepSeek", init: () => streamDeepSeekProvider(normalised) });
-        }
-        if (genAI && !attempts.find((a) => a.name === "Gemini")) {
+        } else if (provider === "gemini" && genAI) {
           attempts.push({ name: "Gemini", init: () => streamGemini(normalised, contextSuffix) });
         }
-        const claudeKey = process.env.ANTHROPIC_DIRECT_API_KEY || process.env.ANTHROPIC_API_KEY;
-        if (claudeKey && !attempts.find((a) => a.name === "Claude")) {
-          attempts.push({ name: "Claude", init: () => streamClaudeWithTools(normalised as Anthropic.MessageParam[]) });
+
+        // Always allow Gemini as a fallback if DeepSeek 402s and Gemini key exists (never fall back to Claude)
+        if (genAI && !attempts.find((a) => a.name === "Gemini")) {
+          attempts.push({ name: "Gemini", init: () => streamGemini(normalised, contextSuffix) });
         }
 
         if (attempts.length === 0) {
           throw new Error(
-            "No AI provider configured. Set DEEPSEEK_API_KEY, GEMINI_API_KEY, or ANTHROPIC_API_KEY in .env.local"
+            "No AI provider configured. Set DEEPSEEK_API_KEY (or GEMINI_API_KEY) in .env.local. AI_PROVIDER=deepseek is required."
           );
         }
 
@@ -595,7 +596,7 @@ export async function POST(request: NextRequest) {
         const message = err instanceof Error ? err.message : "Agent request failed";
         const isBalanceError = message.includes("402") || message.includes("Insufficient Balance");
         const userMessage = isBalanceError
-          ? `⚠️ DeepSeek API ran out of credits (error 402). To fix:\n1. Add credits at https://platform.deepseek.com\n2. Or switch AI_PROVIDER to "claude" or "gemini" in .env.local\n\nDetails: ${message}`
+          ? `⚠️ DeepSeek API ran out of credits (error 402). To fix:\n1. Add credits at https://platform.deepseek.com\n2. Or set GEMINI_API_KEY + AI_PROVIDER=gemini in .env.local (Gemini fallback only)\n\nDetails: ${message}`
           : `Error: ${message}`;
         sendSSE(controller, encoder, { type: "text", content: userMessage });
         sendSSE(controller, encoder, { type: "done" });
