@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   Music2, Sparkles, FileText, Globe, Zap, BadgeCheck,
   ChevronRight, ArrowRight, Menu, X, Plus, Minus,
+  Copy, Check, X as XIcon,
+  User, Pen,
 } from "lucide-react";
 
 // ── Logo ──────────────────────────────────────────────────────────────────────
@@ -63,7 +65,7 @@ function Nav() {
             </Button>
             <Button variant="ghost" size="sm" asChild><Link href="/auth/login">Sign In</Link></Button>
             <Button variant="gold" size="sm" asChild>
-              <Link href="/builder">Create EPK <ChevronRight className="w-3.5 h-3.5" /></Link>
+              <Link href="/auth/signup?redirectTo=/builder">Create EPK <ChevronRight className="w-3.5 h-3.5" /></Link>
             </Button>
           </div>
           <button className="md:hidden text-[#EDE9E0]" onClick={() => setOpen(!open)}>
@@ -80,7 +82,7 @@ function Nav() {
               ))}
               <div className="pt-4 flex flex-col gap-3">
                 <Button variant="outline" asChild className="w-full"><Link href="/auth/login">Sign In</Link></Button>
-                <Button variant="gold" asChild className="w-full"><Link href="/builder">Create EPK</Link></Button>
+                <Button variant="gold" asChild className="w-full"><Link href="/auth/signup?redirectTo=/builder">Create EPK</Link></Button>
               </div>
             </div>
           </motion.div>
@@ -112,10 +114,10 @@ function Hero() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button variant="gold" size="xl" asChild>
-              <Link href="/builder">Build Your EPK Free <ArrowRight className="w-4 h-4" /></Link>
+              <Link href="/auth/signup?redirectTo=/builder">Build Your EPK Free <ArrowRight className="w-4 h-4" /></Link>
             </Button>
             <Button variant="outline" size="xl" asChild className="border border-[#C9A227]/20 text-[#EDE9E0] hover:border-[#C9A227]/50 bg-transparent">
-              <a href="#templates">See Templates</a>
+              <a href="#how-it-works">How It Works</a>
             </Button>
           </div>
           <div className="mt-16 grid grid-cols-3 gap-4 max-w-lg mx-auto">
@@ -174,6 +176,64 @@ function Features() {
   );
 }
 
+// ── How It Works ──────────────────────────────────────────────────────────────
+const STEPS = [
+  { icon: User, title: "Tell Us About You", desc: "Share your artist name, genre, hometown, and career highlights. Upload photos, links, and press.", color: "#C9A227" },
+  { icon: Sparkles, title: "AI Writes Your Bio", desc: "Our AI crafts a press-ready bio from your notes — no more writer's block. Edit anytime.", color: "#C9A227" },
+  { icon: FileText, title: "Choose Your Template", desc: "Main EPK for media, Booking Kit for promoters, or Brand Kit for partnerships. Each purpose-built.", color: "#C9A227" },
+  { icon: Globe, title: "Publish & Share", desc: "Get a permanent link + PDF export. Your EPK stays updated and ready to send anywhere.", color: "#C9A227" },
+];
+
+function HowItWorks() {
+  return (
+    <section id="how-it-works" className="py-24 md:py-32">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="text-center mb-16">
+          <Badge variant="gold" className="mb-4">How It Works</Badge>
+          <h2 className="font-display text-[clamp(2.5rem,5vw,3.5rem)] tracking-wider text-[#EDE9E0]">YOUR EPK IN 4 STEPS</h2>
+          <p className="text-[#A0A0A0] mt-4 max-w-xl mx-auto">
+            No design skills needed. No complicated tools. Just your story, your stats, and your sound.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative">
+          {/* Connector line */}
+          <div className="hidden md:block absolute top-16 left-[12.5%] right-[12.5%] h-px bg-gradient-to-r from-transparent via-[#C9A227]/30 to-transparent" />
+          {STEPS.map((s, i) => (
+            <motion.div
+              key={s.title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              viewport={{ once: true }}
+              className="relative text-center"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-[#C9A227]/10 border border-[#C9A227]/20 flex items-center justify-center mx-auto mb-5 relative z-10 group-hover:bg-[#C9A227]/20 transition-colors">
+                <s.icon className="w-6 h-6 text-[#C9A227]" />
+              </div>
+              <span className="font-display text-[10px] tracking-[0.2em] text-[#C9A227] uppercase mb-2 block">
+                Step {i + 1}
+              </span>
+              <h3 className="font-semibold text-[#EDE9E0] mb-2 text-sm">{s.title}</h3>
+              <p className="text-sm text-[#A0A0A0] leading-relaxed max-w-[220px] mx-auto">{s.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          viewport={{ once: true }}
+          className="text-center mt-12"
+        >
+          <Button variant="gold" size="lg" asChild className="rounded-full">
+            <Link href="/auth/signup?redirectTo=/builder">Start Your EPK Free <ArrowRight className="w-4 h-4" /></Link>
+          </Button>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 // ── Templates ─────────────────────────────────────────────────────────────────
 function Templates() {
   const [active, setActive] = useState<"main" | "booking" | "brand">("main");
@@ -206,7 +266,7 @@ function Templates() {
             <p className="text-[#A0A0A0] leading-relaxed mb-6">{t.desc}</p>
             <div className="flex gap-3">
               <Button asChild className="rounded-full px-6 font-semibold tracking-wider text-xs uppercase" style={{ background: t.accent, color: "#050505" }}>
-                <Link href={`/builder?template=${active}`}>Use This Template <ArrowRight className="w-3.5 h-3.5" /></Link>
+                <Link href={`/auth/signup?redirectTo=/builder&template=${active}`}>Use This Template <ArrowRight className="w-3.5 h-3.5" /></Link>
               </Button>
               <Button asChild variant="outline" className="rounded-full px-6 text-xs border-[#333]">
                 <Link href={`/epk/luh-kel${active === "booking" ? "-booking" : active === "brand" ? "-brand" : ""}`} target="_blank">Live Preview</Link>
@@ -284,7 +344,7 @@ function Pricing() {
                 ))}
               </ul>
               <Button variant={tier.highlight ? "gold" : "gold-outline"} className="w-full rounded-full text-xs uppercase tracking-widest" asChild>
-                <Link href={tier.href}>{tier.cta}</Link>
+                <Link href="/auth/signup?redirectTo=/builder">{tier.cta}</Link>
               </Button>
             </motion.div>
           ))}
@@ -347,12 +407,232 @@ function CTA() {
           <h2 className="font-display text-[clamp(2.5rem,6vw,4rem)] tracking-wider text-[#EDE9E0] mb-4">READY TO GET BOOKED?</h2>
           <p className="text-[#A0A0A0] mb-8 max-w-xl mx-auto">Join artists using EPK Agent to land shows, partnerships, and press coverage.</p>
           <Button variant="gold" size="xl" asChild>
-            <Link href="/builder">Build Your EPK Free <ArrowRight className="w-4 h-4" /></Link>
+            <Link href="/auth/signup?redirectTo=/builder">Build Your EPK Free <ArrowRight className="w-4 h-4" /></Link>
           </Button>
           <p className="text-xs text-[#555] mt-4">No credit card required</p>
         </motion.div>
       </div>
     </section>
+  );
+}
+
+// ── Free Bio Updater Widget ────────────────────────────────────────────────────
+function BioUpdater() {
+  const [open, setOpen] = useState(false);
+  const [step, setStep] = useState<"form" | "generating" | "result">("form");
+  const [name, setName] = useState("");
+  const [genre, setGenre] = useState("");
+  const [hometown, setHometown] = useState("");
+  const [notes, setNotes] = useState("");
+  const [bio, setBio] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const handleGenerate = async () => {
+    if (!name.trim()) return;
+    setError("");
+    setStep("generating");
+    setBio("");
+
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          artistName: name.trim(),
+          genre: genre.trim() || undefined,
+          hometown: hometown.trim() || undefined,
+          rawBio: notes.trim() || undefined,
+          template: "main",
+        }),
+      });
+
+      if (!res.ok) throw new Error("Generation failed");
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      let text = "";
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split("\n");
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            const payload = line.slice(6);
+            if (payload === "[DONE]") break;
+            try {
+              const data = JSON.parse(payload);
+              if (data.text) text += data.text;
+            } catch { /* skip partial */ }
+          }
+        }
+      }
+
+      setBio(text);
+      setStep("result");
+    } catch {
+      setError("Something went wrong. Try again.");
+      setStep("form");
+    }
+  };
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(bio);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleReset = () => {
+    setName("");
+    setGenre("");
+    setHometown("");
+    setNotes("");
+    setBio("");
+    setError("");
+    setStep("form");
+  };
+
+  if (!open) {
+    return (
+      <motion.button
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        whileHover={{ scale: 1.05 }}
+        onClick={() => setOpen(true)}
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-2xl bg-[#C9A227] text-[#050505] shadow-xl shadow-[#C9A227]/20 flex items-center justify-center hover:bg-[#E8C840] transition-colors"
+        title="Free AI Bio Writer"
+      >
+        <Pen className="w-6 h-6" />
+      </motion.button>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-32px)] rounded-2xl border border-[#C9A227]/20 bg-[#0D0D0D] shadow-2xl shadow-black/50 overflow-hidden"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[#C9A227]/10 bg-[#0A0A0A]">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-[#C9A227]/10 flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-[#C9A227]" />
+          </div>
+          <div>
+            <span className="text-xs font-semibold text-[#EDE9E0] tracking-wider uppercase">Free Bio Writer</span>
+            <p className="text-[9px] text-[#555]">AI-powered press kit bio</p>
+          </div>
+        </div>
+        <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg text-[#555] hover:text-[#EDE9E0] hover:bg-[#181818] transition-colors">
+          <XIcon className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Body */}
+      <div className="p-4 max-h-[420px] overflow-y-auto scrollbar-hide">
+        {step === "form" && (
+          <div className="space-y-3">
+            <p className="text-xs text-[#A0A0A0] leading-relaxed mb-3">
+              Drop a few details below and our AI will write a press-ready bio for you. Free, no account needed.
+            </p>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Artist name *"
+              className="w-full bg-[#111] border border-[#222] rounded-lg px-3 py-2.5 text-sm text-[#EDE9E0] placeholder:text-[#555] focus:outline-none focus:border-[#C9A227]/50 transition-colors"
+            />
+            <div className="flex gap-2">
+              <input
+                value={genre}
+                onChange={(e) => setGenre(e.target.value)}
+                placeholder="Genre"
+                className="flex-1 bg-[#111] border border-[#222] rounded-lg px-3 py-2.5 text-sm text-[#EDE9E0] placeholder:text-[#555] focus:outline-none focus:border-[#C9A227]/50 transition-colors"
+              />
+              <input
+                value={hometown}
+                onChange={(e) => setHometown(e.target.value)}
+                placeholder="Hometown"
+                className="flex-1 bg-[#111] border border-[#222] rounded-lg px-3 py-2.5 text-sm text-[#EDE9E0] placeholder:text-[#555] focus:outline-none focus:border-[#C9A227]/50 transition-colors"
+              />
+            </div>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Tell us about yourself — achievements, influences, style, etc."
+              rows={3}
+              className="w-full bg-[#111] border border-[#222] rounded-lg px-3 py-2.5 text-sm text-[#EDE9E0] placeholder:text-[#555] focus:outline-none focus:border-[#C9A227]/50 transition-colors resize-none"
+            />
+            {error && <p className="text-xs text-red-400">{error}</p>}
+            <Button
+              variant="gold"
+              size="sm"
+              className="w-full rounded-lg"
+              onClick={handleGenerate}
+              disabled={!name.trim()}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Generate Bio
+            </Button>
+            <p className="text-[9px] text-[#444] text-center">Free preview — create an account for the full EPK</p>
+          </div>
+        )}
+
+        {step === "generating" && (
+          <div className="flex flex-col items-center justify-center py-10">
+            <div className="w-10 h-10 rounded-xl bg-[#C9A227]/10 flex items-center justify-center mb-4">
+              <div className="w-5 h-5 border-2 border-[#C9A227] border-t-transparent rounded-full animate-spin" />
+            </div>
+            <p className="text-sm text-[#A0A0A0]">Writing your bio...</p>
+            <p className="text-[10px] text-[#555] mt-1">Crafting something press-ready</p>
+          </div>
+        )}
+
+        {step === "result" && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-[#C9A227] font-medium tracking-wider uppercase">Your Bio</span>
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] text-[#555] hover:text-[#C9A227] hover:bg-[#C9A227]/10 transition-colors"
+              >
+                {copied ? (
+                  <><Check className="w-3 h-3 text-[#27C93F]" /> Copied</>
+                ) : (
+                  <><Copy className="w-3 h-3" /> Copy</>
+                )}
+              </button>
+            </div>
+            <div className="rounded-xl border border-[#222] bg-[#111] p-4">
+              <p className="text-sm text-[#E0DCD4] leading-relaxed whitespace-pre-wrap">{bio}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="flex-1 rounded-lg border-[#333] text-xs" onClick={handleReset}>
+                Try Again
+              </Button>
+              <Button variant="gold" size="sm" className="flex-1 rounded-lg text-xs" asChild>
+                <Link href="/auth/signup?redirectTo=/builder">
+                  Build Full EPK <ArrowRight className="w-3 h-3" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="px-4 py-2.5 border-t border-[#C9A227]/5 bg-[#0A0A0A]">
+        <p className="text-[9px] text-[#444] text-center">
+          Powered by AI — review before publishing
+        </p>
+      </div>
+
+      <div ref={messagesEndRef} />
+    </motion.div>
   );
 }
 
@@ -364,11 +644,13 @@ export default function Home() {
       <main>
         <Hero />
         <Features />
+        <HowItWorks />
         <Templates />
         <Pricing />
         <FAQ />
         <CTA />
       </main>
+      <BioUpdater />
     </>
   );
 }

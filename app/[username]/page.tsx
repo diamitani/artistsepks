@@ -118,8 +118,6 @@ export default async function ProfilePage({ params }: PageProps) {
   const socialLinks = profile.socialLinks || [];
   const venues = profile.venues || [];
   const dash = profile.socialDashboard;
-  const isLive = !!profile.displayName;
-
   return (
     <div className="min-h-screen bg-[#050505]">
       {/* Cover with animated gradient */}

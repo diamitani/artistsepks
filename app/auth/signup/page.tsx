@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Music2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 
-export default function SignupPage() {
-  const router = useRouter();
+function SignupForm() {
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo") || "/builder";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,7 +27,7 @@ export default function SignupPage() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
       },
     });
 
@@ -57,7 +58,7 @@ export default function SignupPage() {
             <p className="text-sm text-[#A0A0A0]">
               We sent a confirmation link to{" "}
               <span className="text-[#C9A227]">{email}</span>. Click it to
-              activate your account.
+              activate your account, then you'll be redirected to the EPK builder.
             </p>
           </div>
         </div>
@@ -131,7 +132,7 @@ export default function SignupPage() {
             <p className="text-center text-xs text-[#555]">
               Already have an account?{" "}
               <Link
-                href="/auth/login"
+                href={`/auth/login${redirectTo !== "/builder" ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ""}`}
                 className="text-[#C9A227] hover:underline"
               >
                 Sign in
@@ -141,5 +142,13 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupForm />
+    </Suspense>
   );
 }

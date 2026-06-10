@@ -6,7 +6,7 @@ import { fetchSpotifyData } from "@/lib/spotify";
 import { scrapeSocialProfile } from "@/lib/social-scraper";
 import { fetchPageText } from "@/lib/fetch-page";
 import { getRiderById, getRiderSet } from "@/lib/riders";
-import { streamDeepSeek, isConfigured as deepSeekConfigured, type DeepSeekTool } from "@/lib/deepseek";
+import { streamDeepSeek, isConfigured as deepSeekConfigured, type DeepSeekTool, type DeepSeekMessage } from "@/lib/deepseek";
 
 // ── Provider helpers ───────────────────────────────────────────────────────────
 
@@ -70,8 +70,8 @@ async function executeTool(tool: ToolCall): Promise<string> {
     const riderType = tool.input.riderType as string;
     const level = tool.input.level as string;
     const notes = tool.input.notes as string || "";
-    const set = riderType === "backline" ? (level === "full" ? "festival" : "club") : "club";
-    const riders = getRiderSet(riderType === "backline" ? "club" : "club");
+    const set = level === "full" ? "festival" : "club";
+    const riders = getRiderSet(set);
     const rider = riders.find((r) => r.id.includes(riderType));
     if (!rider) return JSON.stringify({ error: `No rider found for ${riderType} ${level}` });
     return JSON.stringify({
@@ -201,7 +201,7 @@ async function* streamClaudeWithTools(
   }
 }
 
-// ── Gemini provider ────────────────────────────────────────────────────────────
+  // ── Gemini provider ────────────────────────────────────────────────────────────
 
 const geminiKey = process.env.GEMINI_API_KEY;
 const genAI = geminiKey ? new GoogleGenerativeAI(geminiKey) : null;
@@ -235,7 +235,7 @@ function geminiSchema() {
   }];
 }
 
-async function* streamGemini(messages: { role: string; content: string }[], epkContext: string) {
+async function* streamGemini(messages: { role: string; content: string }[], _epkContext: string) {
   if (!genAI) throw new Error("Gemini not configured (GEMINI_API_KEY missing)");
 
   const model = genAI.getGenerativeModel({
@@ -250,7 +250,7 @@ async function* streamGemini(messages: { role: string; content: string }[], epkC
   }));
 
   const lastMsg = messages[messages.length - 1];
-  const userPrompt = lastMsg ? lastMsg.content + epkContext : "";
+  const userPrompt = lastMsg ? lastMsg.content : "";
 
   const chat = model.startChat({ history });
   const result = await chat.sendMessageStream(userPrompt);
@@ -424,8 +424,7 @@ function deepSeekTools(): DeepSeekTool[] {
 }
 
 async function* streamDeepSeekProvider(
-  messages: { role: string; content: string }[],
-  epkContext: string
+  messages: { role: string; content: string }[]
 ): AsyncGenerator<{ type: string; data: unknown }> {
   if (!deepSeekConfigured()) {
     throw new Error("DeepSeek API key not configured. Set DEEPSEEK_API_KEY in your environment.");
@@ -434,13 +433,11 @@ async function* streamDeepSeekProvider(
   const tools = deepSeekTools();
   const normalised = messages.map((m) => ({
     role: m.role as "user" | "assistant" | "system",
-    content: m.role === "user" && m === messages[messages.length - 1]
-      ? m.content + epkContext
-      : m.content,
+    content: m.content,
   }));
 
   // We handle tool calls in a loop (multi-round)
-  let currentMessages: any[] = [...normalised];
+  let currentMessages: DeepSeekMessage[] = [...normalised];
   let round = 0;
   const MAX_ROUNDS = 5;
 
@@ -474,12 +471,12 @@ async function* streamDeepSeekProvider(
         role: "assistant",
         content: "",
         tool_calls: [{ id: tc.id, type: "function" as const, function: { name: tc.name, arguments: JSON.stringify(tc.input) } }],
-      } as any);
+      });
       currentMessages.push({
-        role: "tool",
+        role: "tool" as const,
         content: result,
         tool_call_id: tc.id,
-      } as any);
+      });
 
       if (tc.name === "fetch_spotify_data") {
         try { yield { type: "spotify_data", data: JSON.parse(result) }; }
@@ -524,25 +521,71 @@ export async function POST(request: NextRequest) {
       try {
         sendSSE(controller, encoder, { type: "status", status: "thinking" });
 
-        let generator;
-        if (provider === "deepseek") {
-          if (!deepSeekConfigured()) {
-            throw new Error("DeepSeek selected (AI_PROVIDER=deepseek) but DEEPSEEK_API_KEY is not configured");
-          }
-          generator = streamDeepSeekProvider(normalised, contextSuffix);
-        } else if (provider === "gemini" && genAI) {
-          generator = streamGemini(normalised, contextSuffix);
-        } else if (provider === "gemini" && !genAI) {
-          throw new Error("Gemini selected (AI_PROVIDER=gemini) but GEMINI_API_KEY is not configured");
-        } else {
-          generator = streamClaudeWithTools(normalised as Anthropic.MessageParam[]);
+        // Build fallback provider chain — try configured provider first, then fallbacks
+        const attempts: Array<{
+          name: string;
+          init: () => AsyncGenerator<{ type: string; data: unknown }>;
+        }> = [];
+
+        if (provider === "deepseek" && deepSeekConfigured()) {
+          attempts.push({ name: "DeepSeek", init: () => streamDeepSeekProvider(normalised) });
+        }
+        if (genAI && !attempts.find((a) => a.name === "Gemini")) {
+          attempts.push({ name: "Gemini", init: () => streamGemini(normalised, contextSuffix) });
+        }
+        const claudeKey = process.env.ANTHROPIC_DIRECT_API_KEY || process.env.ANTHROPIC_API_KEY;
+        if (claudeKey && !attempts.find((a) => a.name === "Claude")) {
+          attempts.push({ name: "Claude", init: () => streamClaudeWithTools(normalised as Anthropic.MessageParam[]) });
         }
 
-        sendSSE(controller, encoder, { type: "status", status: "building" });
+        if (attempts.length === 0) {
+          throw new Error(
+            "No AI provider configured. Set DEEPSEEK_API_KEY, GEMINI_API_KEY, or ANTHROPIC_API_KEY in .env.local"
+          );
+        }
 
-        for await (const event of generator) {
-          const key = event.type === "text" ? "content" : "patch";
-          sendSSE(controller, encoder, { type: event.type, [key]: event.data });
+        let lastError: Error | null = null;
+        let succeeded = false;
+
+        for (const attempt of attempts) {
+          try {
+            const generator = attempt.init();
+            sendSSE(controller, encoder, { type: "status", status: "building" });
+
+            for await (const event of generator) {
+              const key = event.type === "text" ? "content" : "patch";
+              sendSSE(controller, encoder, { type: event.type, [key]: event.data });
+            }
+
+            succeeded = true;
+            lastError = null;
+            break;
+          } catch (err) {
+            lastError = err instanceof Error ? err : new Error(String(err));
+            const isInsufficientBalance =
+              lastError.message.includes("402") ||
+              lastError.message.includes("Insufficient Balance");
+            const isLastAttempt = attempt === attempts[attempts.length - 1];
+
+            if (isInsufficientBalance && !isLastAttempt) {
+              sendSSE(controller, encoder, {
+                type: "text",
+                content: `⚠️ ${attempt.name} is out of credits. Trying next provider...`,
+              });
+              continue;
+            }
+            if (!isLastAttempt) {
+              sendSSE(controller, encoder, {
+                type: "text",
+                content: `⚠️ ${attempt.name} failed (${lastError.message}). Trying next provider...`,
+              });
+              continue;
+            }
+          }
+        }
+
+        if (!succeeded && lastError) {
+          throw lastError;
         }
 
         sendSSE(controller, encoder, { type: "status", status: "done" });
@@ -550,7 +593,11 @@ export async function POST(request: NextRequest) {
         controller.close();
       } catch (err) {
         const message = err instanceof Error ? err.message : "Agent request failed";
-        sendSSE(controller, encoder, { type: "text", content: `Error: ${message}` });
+        const isBalanceError = message.includes("402") || message.includes("Insufficient Balance");
+        const userMessage = isBalanceError
+          ? `⚠️ DeepSeek API ran out of credits (error 402). To fix:\n1. Add credits at https://platform.deepseek.com\n2. Or switch AI_PROVIDER to "claude" or "gemini" in .env.local\n\nDetails: ${message}`
+          : `Error: ${message}`;
+        sendSSE(controller, encoder, { type: "text", content: userMessage });
         sendSSE(controller, encoder, { type: "done" });
         controller.close();
       }

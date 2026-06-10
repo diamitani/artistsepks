@@ -81,7 +81,7 @@ function LoginForm() {
       </Button>
       <p className="text-center text-xs text-[#555]">
         No account?{" "}
-        <Link href="/auth/signup" className="text-[#C9A227] hover:underline">
+        <Link href={`/auth/signup${redirectTo !== "/dashboard" ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ""}`} className="text-[#C9A227] hover:underline">
           Create one free
         </Link>
       </p>

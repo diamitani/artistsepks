@@ -11,7 +11,6 @@ export default function IntakePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing profile in session/localStorage
     const savedId = localStorage.getItem("currentProfileId");
     if (savedId) {
       fetch(`/api/profile?id=${savedId}`)
