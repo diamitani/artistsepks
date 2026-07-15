@@ -328,36 +328,43 @@ function Pricing() {
   const tiers = [
     {
       name: "Free", badge: null,
-      price: "$0", note: "Forever",
-      desc: "Try it out. One full EPK, free forever.",
-      features: ["1 full EPK (any template)", "AI-generated bio", "1 profile photo", "Spotify & YouTube embeds", "PDF download"],
-      cta: "Create Free Profile", plan: null, highlight: false,
+      price: "$0", note: "One EPK",
+      desc: "AI builds your press kit from scratch. View and share — forever free.",
+      features: ["AI agent interviews you", "Builds full EPK automatically", "2 basic styles", "Hosted at artistsepks.com/you", "Shareable link"],
+      cta: "Generate Free EPK", plan: null, highlight: false,
     },
     {
-      name: "EPK", badge: "Popular",
-      price: "$99", note: "One-time",
-      desc: "One full EPK in any template. Yours forever. 12 months of updates.",
-      features: ["Full Main, Booking, or Brand EPK", "All sections unlocked", "Spotify & YouTube embeds", "High-res PDF export", "12 months free updates"],
-      cta: "Get Your EPK", plan: "epk_onetime", highlight: true,
+      name: "Edit Access", badge: null,
+      price: "$9.99", note: "Per EPK",
+      desc: "Unlock editing, updating, and 5 style options for your EPK.",
+      features: ["Edit & update anytime", "5 premium styles", "Custom accent colors", "PDF download", "Bio rewriting"],
+      cta: "Unlock Editing — $9.99", plan: "epk_edit", highlight: false,
     },
     {
-      name: "Pro", badge: null,
-      price: "$19", note: "/mo billed annually",
-      desc: "Everything. All templates, unlimited updates, roster management.",
-      features: ["All 3 EPK types", "Unlimited updates forever", "AI bio regeneration", "Analytics dashboard", "Roster management", "Priority support"],
-      cta: "Start Pro", plan: "pro_yearly", highlight: false,
+      name: "Style Pro", badge: "Popular",
+      price: "$20", note: "Per EPK",
+      desc: "Cinematic layouts, spring animations, taste-skill designs.",
+      features: ["8 style archetypes", "Cinematic cascade layouts", "Spring physics animations", "Staggered reveals", "Spotify + YouTube embeds"],
+      cta: "Go Style Pro — $20", plan: "epk_style_pro", highlight: true,
+    },
+    {
+      name: "Premium", badge: null,
+      price: "$49", note: "Per EPK",
+      desc: "Agency-grade design. Double-Bezel cards, custom domain, analytics.",
+      features: ["Full taste-skill designs", "Double-Bezel architecture", "Custom domain", "Analytics dashboard", "Priority support"],
+      cta: "Go Premium — $49", plan: "epk_premium", highlight: false,
     },
   ];
 
   return (
     <section id="pricing" className="py-24 md:py-32">
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto max-w-6xl px-6">
         <div className="text-center mb-12">
           <Badge variant="gold" className="mb-4">Pricing</Badge>
-          <h2 className="font-display text-[clamp(2.5rem,5vw,3.5rem)] tracking-wider text-[#EDE9E0]">SIMPLE PRICING</h2>
-          <p className="text-[#A0A0A0] mt-3">Start free. Pay once when you need the full kit. Subscribe when you go pro.</p>
+          <h2 className="font-display text-[clamp(2.5rem,5vw,3.5rem)] tracking-wider text-[#EDE9E0]">GENERATE FREE. PAY TO CUSTOMIZE.</h2>
+          <p className="text-[#A0A0A0] mt-3">The agent builds your EPK for free. Editing, styling, and premium designs are per-EPK purchases.</p>
         </div>
-        <div className="grid md:grid-cols-3 gap-5 items-stretch">
+        <div className="grid md:grid-cols-4 gap-4 items-stretch">
           {tiers.map((tier, i) => (
             <motion.div key={tier.name} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }} viewport={{ once: true }}
               className={cn("rounded-2xl border p-6 flex flex-col relative", tier.highlight ? "border-[#C9A227] bg-[#C9A227]/5" : "border-[#C9A227]/10 bg-[#181818]")}>

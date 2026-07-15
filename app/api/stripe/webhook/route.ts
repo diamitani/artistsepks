@@ -69,8 +69,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
   const customerEmail =
     session.customer_email ?? session.customer_details?.email;
   const customerId = session.customer as string;
-  const plan = session.metadata?.plan || "epk_onetime";
-  const isSubscription = plan.startsWith("pro_");
+  const plan = (session.metadata?.plan) || "epk_edit";
 
   if (!customerEmail) {
     console.warn("No email in checkout session", session.id);
@@ -90,7 +89,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
       .from("subscriptions")
       .update({
         plan,
-        status: isSubscription ? "active" : "complete",
+        status: "complete",
         stripe_customer_id: customerId,
         customer_email: customerEmail,
         updated_at: new Date().toISOString(),
@@ -99,7 +98,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
   } else {
     await admin.from("subscriptions").insert({
       plan,
-      status: isSubscription ? "active" : "complete",
+      status: "complete",
       stripe_customer_id: customerId,
       customer_email: customerEmail,
       metadata: { session_id: session.id },
@@ -110,7 +109,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const customerId = subscription.customer as string;
   const status = subscription.status;
-  const plan = subscription.metadata?.plan || "pro_monthly";
+  const plan = subscription.metadata?.plan || "epk_edit";
 
   await getSupabaseAdmin()
     .from("subscriptions")

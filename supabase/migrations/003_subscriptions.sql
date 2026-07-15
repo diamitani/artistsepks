@@ -1,13 +1,12 @@
 -- ── Subscriptions Migration 003 ─────────────────────────────────────────────
--- Run after 002_full_epk_schema.sql
--- Tracks Stripe subscriptions linked to users
+-- Tracks one-time EPK purchases (per-EPK pricing model)
 
 CREATE TABLE IF NOT EXISTS subscriptions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   stripe_customer_id TEXT,
   customer_email TEXT NOT NULL,
-  plan TEXT NOT NULL CHECK (plan IN ('free', 'epk_onetime', 'pro_monthly', 'pro_yearly')),
+  plan TEXT NOT NULL CHECK (plan IN ('free', 'epk_edit', 'epk_style_pro', 'epk_premium')),
   status TEXT NOT NULL DEFAULT 'incomplete' CHECK (status IN ('incomplete', 'active', 'past_due', 'canceled', 'complete')),
   current_period_end TIMESTAMPTZ,
   metadata JSONB DEFAULT '{}'::jsonb,
@@ -32,7 +31,6 @@ CREATE POLICY "Service role can manage all subscriptions"
   USING (true)
   WITH CHECK (true);
 
--- Trigger for updated_at
 DROP TRIGGER IF EXISTS subscriptions_updated_at ON subscriptions;
 CREATE TRIGGER subscriptions_updated_at
   BEFORE UPDATE ON subscriptions

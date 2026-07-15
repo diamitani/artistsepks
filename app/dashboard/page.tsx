@@ -169,7 +169,7 @@ export default function DashboardPage() {
       {/* Main */}
       <main className="flex-1 p-6 md:p-10 overflow-y-auto">
         {/* Plan Banner */}
-        {planState.plan !== "pro_monthly" && planState.plan !== "pro_yearly" && (
+        {planState.plan === "free" && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -180,29 +180,18 @@ export default function DashboardPage() {
                 <Crown className="w-4 h-4 text-[#C9A227]" />
               </div>
               <div>
-                <p className="text-sm text-[#EDE9E0] font-medium">
-                  {planState.plan === "free"
-                    ? "You're on the Free plan"
-                    : `You're on the ${planInfo?.name} plan`}
-                </p>
-                <p className="text-xs text-[#A0A0A0]">
-                  {planState.plan === "free"
-                    ? "Upgrade to publish full EPKs with all sections"
-                    : "Manage your subscription anytime"}
-                </p>
+                <p className="text-sm text-[#EDE9E0] font-medium">Free EPK — View Only</p>
+                <p className="text-xs text-[#A0A0A0]">Unlock editing, styles, and premium designs starting at $9.99</p>
               </div>
             </div>
             <Button variant="gold" size="sm" asChild className="rounded-full">
-              <Link href="/#pricing">
-                {planState.plan === "free" ? "Upgrade" : "View Plans"}
-                <ArrowUpRight className="w-3 h-3" />
-              </Link>
+              <Link href="/#pricing">Upgrade Style <ArrowUpRight className="w-3 h-3" /></Link>
             </Button>
           </motion.div>
         )}
 
-        {/* Pro status banner */}
-        {(planState.plan === "pro_monthly" || planState.plan === "pro_yearly") && (
+        {/* Paid plan active banner */}
+        {planState.plan !== "free" && planState.status === "complete" && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -213,24 +202,10 @@ export default function DashboardPage() {
                 <BadgeCheck className="w-4 h-4 text-[#27C93F]" />
               </div>
               <div>
-                <p className="text-sm text-[#EDE9E0] font-medium">
-                  Pro Plan Active
-                </p>
-                <p className="text-xs text-[#A0A0A0]">
-                  {planInfo?.name} — unlimited EPKs, AI regen, analytics
-                  {planState.currentPeriodEnd &&
-                    ` · Renews ${new Date(planState.currentPeriodEnd).toLocaleDateString()}`}
-                </p>
+                <p className="text-sm text-[#EDE9E0] font-medium">{planInfo?.name} Active</p>
+                <p className="text-xs text-[#A0A0A0]">Editing and {planInfo?.canStyle ? "style customization" : "updates"} unlocked</p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleManageSubscription}
-              className="rounded-full text-xs border-[#333]"
-            >
-              Manage Subscription
-            </Button>
           </motion.div>
         )}
 
@@ -260,8 +235,8 @@ export default function DashboardPage() {
                 Upgrade to Create EPK
               </Link>
             </Button>
-          ) : planState.plan === "epk_onetime" && epks.length >= 1 ? (
-            <p className="text-xs text-[#C9A227]">EPK limit reached — upgrade to Pro for more</p>
+          ) : !canCreate ? (
+            <p className="text-xs text-[#C9A227]">EPK limit reached — purchase a plan to create more</p>
           ) : null}
         </div>
 

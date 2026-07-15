@@ -10,18 +10,17 @@ import { Button } from "@/components/ui/button";
 function SuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const plan = searchParams.get("plan") || "epk_onetime";
+  const plan = searchParams.get("plan") || "epk_edit";
   const [countdown, setCountdown] = useState(8);
 
-  const planLabel =
-    plan === "pro_monthly"
-      ? "Pro Monthly"
-      : plan === "pro_yearly"
-      ? "Pro Annual"
-      : "EPK";
+  const planLabels: Record<string, string> = {
+    epk_edit: "Edit Access",
+    epk_style_pro: "Style Pro",
+    epk_premium: "Premium",
+  };
+  const planLabel = planLabels[plan] || "EPK";
 
-  const nextStep =
-    plan.startsWith("pro_") ? "/dashboard" : "/builder";
+  const nextStep = "/builder";
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -64,7 +63,7 @@ function SuccessContent() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button variant="gold" size="lg" asChild className="rounded-full">
             <Link href={nextStep}>
-              {plan.startsWith("pro_") ? "Go to Dashboard" : "Build Your EPK"}
+              Customize Your EPK
               <ArrowRight className="w-4 h-4" />
             </Link>
           </Button>

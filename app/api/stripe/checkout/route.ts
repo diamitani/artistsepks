@@ -10,10 +10,11 @@ function getStripe(): Stripe {
 }
 
 // Price IDs — configure in Stripe Dashboard, set in .env
+// All are one-time payment products (per-EPK pricing)
 const PRICE_IDS: Record<string, string> = {
-  epk_onetime: process.env.STRIPE_PRICE_EPK_ONETIME ?? "",
-  pro_monthly: process.env.STRIPE_PRICE_PRO_MONTHLY ?? "",
-  pro_yearly: process.env.STRIPE_PRICE_PRO_YEARLY ?? "",
+  epk_edit: process.env.STRIPE_PRICE_EPK_EDIT ?? "",
+  epk_style_pro: process.env.STRIPE_PRICE_EPK_STYLE_PRO ?? "",
+  epk_premium: process.env.STRIPE_PRICE_EPK_PREMIUM ?? "",
 };
 
 export async function POST(req: NextRequest) {
@@ -27,32 +28,21 @@ export async function POST(req: NextRequest) {
     const priceId = PRICE_IDS[plan];
     if (!plan || !priceId) {
       return NextResponse.json(
-        { error: "Invalid plan. Use: epk_onetime, pro_monthly, pro_yearly" },
+        { error: "Invalid plan. Use: epk_edit, epk_style_pro, epk_premium" },
         { status: 400 }
       );
     }
 
-    const isSubscription = plan.startsWith("pro_");
-
     const params: Record<string, unknown> = {
-      mode: isSubscription ? "subscription" : "payment",
+      mode: "payment",
       line_items: [{ price: priceId, quantity: 1 }],
       success_url:
         successUrl ??
-        `${req.nextUrl.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+        `${req.nextUrl.origin}/checkout/success?plan=${plan}`,
       cancel_url: cancelUrl ?? `${req.nextUrl.origin}/#pricing`,
       allow_promotion_codes: true,
+      payment_intent_data: { metadata: { plan } },
     };
-
-    if (customerEmail) {
-      params.customer_email = customerEmail;
-    }
-
-    if (isSubscription) {
-      params.subscription_data = { metadata: { plan } };
-    } else {
-      params.payment_intent_data = { metadata: { plan } };
-    }
 
     const session = await getStripe().checkout.sessions.create(
       params as Stripe.Checkout.SessionCreateParams

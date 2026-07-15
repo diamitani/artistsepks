@@ -76,26 +76,18 @@ export async function POST(request: NextRequest) {
 
   const epkCount = count ?? 0;
 
-  // Free users get 1 trial EPK
+  // Free users get 1 free EPK (generate only)
   if (plan === "free" && epkCount >= 1) {
     return NextResponse.json(
-      { error: "Free trial limit reached (1 EPK). Upgrade to EPK or Pro for more." },
+      { error: "Free limit reached (1 EPK). Unlock editing or upgrade your style." },
       { status: 402 }
     );
   }
 
-  // One-time EPK users: max 1 EPK
-  if (plan === "epk_onetime" && epkCount >= 1) {
+  // Paid plans: each purchase = 1 EPK. Check they have an active purchase.
+  if (plan !== "free" && !planActive) {
     return NextResponse.json(
-      { error: "EPK plan limit reached (1 EPK). Upgrade to Pro for unlimited." },
-      { status: 402 }
-    );
-  }
-
-  // Pro check
-  if ((plan === "pro_monthly" || plan === "pro_yearly") && !planActive) {
-    return NextResponse.json(
-      { error: "Your Pro subscription is not active." },
+      { error: "Your purchase is not active. Please complete payment." },
       { status: 402 }
     );
   }
