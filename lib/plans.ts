@@ -17,13 +17,13 @@ export const PLANS: Record<PlanId, PlanInfo> = {
     name: "Free",
     price: "$0",
     period: "Forever",
-    epkLimit: 0, // Can't publish full EPK, only profile
+    epkLimit: 1, // 1 trial EPK
     features: [
-      "Hosted artist profile page",
-      "AI-generated bio (1 generation)",
+      "1 trial EPK (any template)",
+      "AI-generated bio",
       "1 profile photo",
       "Social stats display",
-      "Contact info",
+      "PDF download",
     ],
   },
   epk_onetime: {

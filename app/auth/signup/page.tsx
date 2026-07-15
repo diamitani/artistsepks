@@ -2,12 +2,13 @@
 
 import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Music2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 
 function SignupForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") || "/builder";
 
@@ -15,7 +16,7 @@ function SignupForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [confirmNeeded, setConfirmNeeded] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -23,7 +24,7 @@ function SignupForm() {
     setError("");
 
     const supabase = createClient();
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -37,11 +38,19 @@ function SignupForm() {
       return;
     }
 
-    setSuccess(true);
+    // If session is returned, email confirmation is off — redirect immediately
+    if (data.session) {
+      router.push(redirectTo);
+      router.refresh();
+      return;
+    }
+
+    // Email confirmation required
+    setConfirmNeeded(true);
     setLoading(false);
   }
 
-  if (success) {
+  if (confirmNeeded) {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center px-4">
         <div className="w-full max-w-sm text-center">
@@ -55,11 +64,21 @@ function SignupForm() {
             <h2 className="font-display text-xl tracking-wider text-[#EDE9E0] mb-2">
               CHECK YOUR EMAIL
             </h2>
-            <p className="text-sm text-[#A0A0A0]">
+            <p className="text-sm text-[#A0A0A0] mb-4">
               We sent a confirmation link to{" "}
-              <span className="text-[#C9A227]">{email}</span>. Click it to
-              activate your account, then you'll be redirected to the EPK builder.
+              <span className="text-[#C9A227]">{email}</span>.
             </p>
+            <p className="text-xs text-[#555]">
+              Click it to activate your account, then you'll be redirected to the EPK builder.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-6 w-full rounded-full text-xs border-[#333]"
+              onClick={() => setConfirmNeeded(false)}
+            >
+              Try again
+            </Button>
           </div>
         </div>
       </div>

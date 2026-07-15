@@ -329,8 +329,8 @@ function Pricing() {
     {
       name: "Free", badge: null,
       price: "$0", note: "Forever",
-      desc: "Shareable artist profile page with AI bio and PDF download.",
-      features: ["Hosted artist page", "AI-generated bio", "1 profile photo", "Social stats + contact", "PDF download"],
+      desc: "Try it out. One full EPK, free forever.",
+      features: ["1 full EPK (any template)", "AI-generated bio", "1 profile photo", "Spotify & YouTube embeds", "PDF download"],
       cta: "Create Free Profile", plan: null, highlight: false,
     },
     {

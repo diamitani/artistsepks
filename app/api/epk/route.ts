@@ -76,10 +76,10 @@ export async function POST(request: NextRequest) {
 
   const epkCount = count ?? 0;
 
-  // Free users cannot publish
-  if (plan === "free") {
+  // Free users get 1 trial EPK
+  if (plan === "free" && epkCount >= 1) {
     return NextResponse.json(
-      { error: "Free plan cannot publish EPKs. Upgrade to EPK or Pro." },
+      { error: "Free trial limit reached (1 EPK). Upgrade to EPK or Pro for more." },
       { status: 402 }
     );
   }
