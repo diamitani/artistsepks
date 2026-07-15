@@ -290,6 +290,39 @@ function Templates() {
   );
 }
 
+// ── Stripe Checkout Button ────────────────────────────────────────────────────
+function StripePricingButton({ plan, label, variant }: { plan: string; label: string; variant: "gold" | "gold-outline" }) {
+  const [loading, setLoading] = useState(false);
+
+  async function handleCheckout() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan,
+          successUrl: `${window.location.origin}/checkout/success?plan=${plan}`,
+          cancelUrl: `${window.location.origin}/#pricing`,
+        }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else alert(data.error || "Checkout failed. Please try again.");
+    } catch {
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Button variant={variant} className="w-full rounded-full text-xs uppercase tracking-widest" onClick={handleCheckout} disabled={loading}>
+      {loading ? "Redirecting..." : label}
+    </Button>
+  );
+}
+
 // ── Pricing ───────────────────────────────────────────────────────────────────
 function Pricing() {
   const tiers = [
@@ -298,21 +331,21 @@ function Pricing() {
       price: "$0", note: "Forever",
       desc: "Shareable artist profile page with AI bio and PDF download.",
       features: ["Hosted artist page", "AI-generated bio", "1 profile photo", "Social stats + contact", "PDF download"],
-      cta: "Create Free Profile", href: "/builder", highlight: false,
+      cta: "Create Free Profile", plan: null, highlight: false,
     },
     {
       name: "EPK", badge: "Popular",
       price: "$99", note: "One-time",
       desc: "One full EPK in any template. Yours forever. 12 months of updates.",
       features: ["Full Main, Booking, or Brand EPK", "All sections unlocked", "Spotify & YouTube embeds", "High-res PDF export", "12 months free updates"],
-      cta: "Get Your EPK", href: "/builder", highlight: true,
+      cta: "Get Your EPK", plan: "epk_onetime", highlight: true,
     },
     {
       name: "Pro", badge: null,
       price: "$19", note: "/mo billed annually",
       desc: "Everything. All templates, unlimited updates, roster management.",
       features: ["All 3 EPK types", "Unlimited updates forever", "AI bio regeneration", "Analytics dashboard", "Roster management", "Priority support"],
-      cta: "Start Pro", href: "/builder", highlight: false,
+      cta: "Start Pro", plan: "pro_yearly", highlight: false,
     },
   ];
 
@@ -343,9 +376,13 @@ function Pricing() {
                   </li>
                 ))}
               </ul>
-              <Button variant={tier.highlight ? "gold" : "gold-outline"} className="w-full rounded-full text-xs uppercase tracking-widest" asChild>
-                <Link href="/auth/signup?redirectTo=/builder">{tier.cta}</Link>
-              </Button>
+              {tier.plan ? (
+                <StripePricingButton plan={tier.plan} label={tier.cta} variant={tier.highlight ? "gold" : "gold-outline"} />
+              ) : (
+                <Button variant="gold-outline" className="w-full rounded-full text-xs uppercase tracking-widest" asChild>
+                  <Link href="/auth/signup?redirectTo=/builder">{tier.cta}</Link>
+                </Button>
+              )}
             </motion.div>
           ))}
         </div>

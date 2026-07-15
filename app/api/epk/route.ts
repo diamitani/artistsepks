@@ -45,7 +45,7 @@ export async function GET() {
   return NextResponse.json({ epks: data });
 }
 
-// POST /api/epk — create a new EPK
+// POST /api/epk — create a new EPK (plan-gated)
 export async function POST(request: NextRequest) {
   const supabase = await getSupabase();
   const {
@@ -54,6 +54,50 @@ export async function POST(request: NextRequest) {
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Check plan limits
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("plan, status")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const plan = (sub?.plan as string) || "free";
+  const planActive = sub?.status === "active" || sub?.status === "complete";
+
+  // Count existing EPKs
+  const { count } = await supabase
+    .from("epks")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
+  const epkCount = count ?? 0;
+
+  // Free users cannot publish
+  if (plan === "free") {
+    return NextResponse.json(
+      { error: "Free plan cannot publish EPKs. Upgrade to EPK or Pro." },
+      { status: 402 }
+    );
+  }
+
+  // One-time EPK users: max 1 EPK
+  if (plan === "epk_onetime" && epkCount >= 1) {
+    return NextResponse.json(
+      { error: "EPK plan limit reached (1 EPK). Upgrade to Pro for unlimited." },
+      { status: 402 }
+    );
+  }
+
+  // Pro check
+  if ((plan === "pro_monthly" || plan === "pro_yearly") && !planActive) {
+    return NextResponse.json(
+      { error: "Your Pro subscription is not active." },
+      { status: 402 }
+    );
   }
 
   const body: EPKData = await request.json();
