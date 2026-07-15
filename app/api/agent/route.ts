@@ -506,13 +506,19 @@ export async function POST(request: NextRequest) {
     ? `\n\n[EPK progress: ${epkData.artistName || "no name yet"}, template: ${epkData.template || "main"}, fields set: artistName=${!!epkData.artistName} genre=${!!epkData.genre} bio=${!!epkData.bio} stats=${Object.keys(epkData.stats || {}).length} releases=${(epkData.releases || []).length} timeline=${(epkData.timeline || []).length} pressQuotes=${(epkData.pressQuotes || []).length} socialLinks=${Object.keys(epkData.socialLinks || {}).length} bookingEmail=${!!epkData.bookingEmail}]`
     : "";
 
-  // Normalise messages
-  const normalised = messages.map((m: { role: string; content: string }) => ({
-    role: m.role === "assistant" ? "assistant" : "user" as "user" | "assistant",
-    content: m.role === "user" && m === messages[messages.length - 1]
-      ? m.content + contextSuffix
-      : m.content,
-  }));
+  // Normalise messages — always inject a hidden instruction to keep the agent asking
+  const normalised = messages.map((m: { role: string; content: string }, i: number) => {
+    const isLastUser = m.role === "user" && i === messages.length - 1;
+    let content = m.content;
+    if (isLastUser) {
+      content += contextSuffix;
+      content += "\n\n[REMEMBER: End your response with exactly ONE question. Never end without asking what's next. If you just updated the EPK, ask the next question in the interview flow. If stuck, ask what genre they make.]";
+    }
+    return {
+      role: m.role === "assistant" ? "assistant" : "user" as "user" | "assistant",
+      content,
+    };
+  });
 
   const encoder = new TextEncoder();
 

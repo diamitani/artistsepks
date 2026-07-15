@@ -300,6 +300,7 @@ export default function BuilderPage() {
       setMessages((prev) => [...prev, assistantMsg]);
 
       let assistantText = "";
+      let hadUpdates = false;
 
       try {
         const res = await fetch("/api/agent", {
@@ -347,6 +348,7 @@ export default function BuilderPage() {
                     break;
 
                   case "epk_update":
+                    hadUpdates = true;
                     setEpk((prev) => applyPatch(prev, event.patch));
                     setMessages((prev) =>
                       prev.map((m) =>
@@ -377,12 +379,57 @@ export default function BuilderPage() {
           }
         }
 
-        // Safety net: if agent didn't end with a question, nudge
-        if (assistantText && !assistantText.includes("?")) {
+        // ── Smart follow-up engine ─────────────────────────────────────
+        // Never leave the user staring at a dead conversation.
+        // If the agent didn't produce meaningful text with a question,
+        // generate a contextual follow-up based on what was just updated.
+        const trimmed = assistantText.trim();
+        const hasQuestion = trimmed.includes("?");
+
+        if (!trimmed && hadUpdates) {
+          // Agent only called tools, no text — generate contextual response
           setMessages((prev) =>
             prev.map((m) =>
               m.id === assistantId
-                ? { ...m, content: assistantText + "\n\nWhat else can you tell me about your music?" }
+                ? { ...m, content: "Got it! What's next — can you tell me your genre and where you're from?" }
+                : m
+            )
+          );
+        } else if (!trimmed && !hadUpdates) {
+          // Agent produced nothing at all — retry prompt
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, content: "Let's build your EPK. What's your artist name?" }
+                : m
+            )
+          );
+        } else if (trimmed && !hasQuestion) {
+          // Agent gave text but no question — append contextual nudge
+          const artistName = epk.artistName || "you";
+          const followUps = [
+            `What genre of music do you make?`,
+            `Where are you based?`,
+            `How long have you been making music?`,
+            `Who are your biggest influences?`,
+            `Do you have any press photos I can use?`,
+            `What's your Spotify or YouTube link?`,
+            `Any career highlights you want to feature?`,
+            `What's your booking email?`,
+          ];
+          // Pick a question based on what's missing, or random
+          const missing = [];
+          if (!epk.genre) missing.push(`What genre of music do you make?`);
+          if (!epk.hometown) missing.push(`Where are you based?`);
+          if (!epk.bio) missing.push(`Tell me more about your musical journey — I'll write your bio.`);
+          if (!epk.bookingEmail) missing.push(`What's the best email for booking inquiries?`);
+          if (Object.keys(epk.stats || {}).length === 0) missing.push(`What are your social stats — Instagram followers, Spotify listeners?`);
+          const nextQ = missing.length > 0 ? missing[0] : followUps[Math.floor(Math.random() * followUps.length)];
+
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, content: trimmed + "\n\n" + nextQ }
                 : m
             )
           );
