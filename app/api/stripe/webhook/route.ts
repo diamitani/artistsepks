@@ -10,7 +10,9 @@ function getStripe(): Stripe {
   return _stripe;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _supabaseAdmin: any = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getSupabaseAdmin(): any {
   if (!_supabaseAdmin) {
     _supabaseAdmin = createClient(

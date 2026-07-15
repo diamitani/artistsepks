@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
-import { PLANS, canCreateEPK, isPlanActive } from "@/lib/plans";
+import { PLANS, canCreateEPK } from "@/lib/plans";
 import type { PlanId } from "@/lib/plans";
 import {
   Music2,
@@ -59,10 +59,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [isDemoMode, setIsDemoMode] = useState(false);
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
-
   async function loadDashboard() {
     setLoading(true);
 
@@ -98,6 +94,11 @@ export default function DashboardPage() {
     setLoading(false);
   }
 
+  useEffect(() => {
+    loadDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -118,7 +119,6 @@ export default function DashboardPage() {
   const totalViews = epks.reduce((s, e) => s + e.views, 0);
   const totalDownloads = epks.reduce((s, e) => s + e.downloads, 0);
   const planInfo = PLANS[planState.plan];
-  const planIsActive = isPlanActive(planState.status);
   const canCreate = canCreateEPK(planState.plan, epks.length);
 
   return (
