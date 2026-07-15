@@ -1,20 +1,24 @@
-// ── Obscura-powered social media scraper ──────────────────────────────────────
-// Uses the Obscura headless browser to scrape engagement data from social platforms
+// ── HTTP-based Social Media Scraper ──────────────────────────────────────────
+// No Obscura/Puppeteer needed. Uses fetch + meta tag parsing.
+// All platforms: Instagram, TikTok, YouTube, Twitter/X
 
-import { execSync, ChildProcess, spawn } from "child_process";
-import * as puppeteer from "puppeteer-core";
-import path from "path";
+export type Platform = "instagram" | "tiktok" | "youtube" | "twitter" | "unknown";
 
-function getObscuraBin(): string {
-  return process.env.OBSCURA_PATH || path.join(process.cwd(), "bin", "obscura");
+export interface SocialProfile {
+  platform: Platform;
+  handle: string;
+  url: string;
+  displayName?: string;
+  followers?: string;
+  following?: string;
+  posts?: string;
+  subscribers?: string;
+  totalViews?: string;
+  bio?: string;
+  avatarUrl?: string;
+  verified: boolean; // was the data actually scraped or is it a fallback?
+  rawDescription?: string;
 }
-const OBSCURA_PORT = 9922; // different from default to avoid conflicts
-
-let obscuraProcess: ChildProcess | null = null;
-
-// ── Platform detection ─────────────────────────────────────────────────────────
-
-type Platform = "instagram" | "tiktok" | "youtube" | "twitter" | "unknown";
 
 function detectPlatform(url: string): Platform {
   if (url.includes("instagram.com")) return "instagram";
@@ -25,295 +29,249 @@ function detectPlatform(url: string): Platform {
 }
 
 function extractHandle(url: string, platform: Platform): string {
-  const clean = url.replace(/https?:\/\//, "").replace(/\/$/, "");
-  const parts = clean.split("/");
-  // Patterns: instagram.com/handle, tiktok.com/@handle, youtube.com/@handle
-  const handle = parts.find((p) => p.startsWith("@")) || parts[1] || "";
-  return handle.replace(/^@/, "");
+  try {
+    const u = new URL(url.startsWith("http") ? url : "https://" + url);
+    const path = u.pathname.replace(/\/$/, "");
+    const parts = path.split("/").filter(Boolean);
+    // @handle on TikTok/YouTube, bare handle on Instagram/Twitter
+    return parts[0]?.replace(/^@/, "") || "";
+  } catch {
+    return url.replace(/https?:\/\//, "").split("/")[1]?.replace(/^@/, "") || "";
+  }
 }
 
-// ── Scrapers per platform ──────────────────────────────────────────────────────
+// ── HTTP fetch with browser-like headers ─────────────────────────────────────
 
-interface SocialProfile {
-  platform: Platform;
-  handle: string;
-  displayName?: string;
-  followers?: string;
-  following?: string;
-  posts?: string;
-  engagement?: {
-    avgLikes?: string;
-    avgComments?: string;
-    engagementRate?: string;
+async function fetchPage(url: string): Promise<string> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12000);
+
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+      redirect: "follow",
+    });
+
+    clearTimeout(timer);
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+
+    return await res.text();
+  } catch (err) {
+    clearTimeout(timer);
+    throw err;
+  }
+}
+
+// ── Meta tag + JSON-LD extraction ────────────────────────────────────────────
+
+interface ParsedMeta {
+  description: string;
+  title: string;
+  image: string;
+  jsonLd: Record<string, unknown> | null;
+}
+
+function parseMeta(html: string): ParsedMeta {
+  const getMeta = (name: string, prop = false): string => {
+    const attr = prop ? "property" : "name";
+    const regex = new RegExp(
+      `<meta[^>]*${attr}=["']${name}["'][^>]*content=["']([^"']*)["']`,
+      "i"
+    );
+    const match = html.match(regex);
+    return match?.[1] || "";
   };
-  avatarUrl?: string;
-  bio?: string;
-  raw: Record<string, unknown>;
+
+  // Try JSON-LD for structured data
+  let jsonLd: Record<string, unknown> | null = null;
+  const jsonLdMatch = html.match(
+    /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/i
+  );
+  if (jsonLdMatch) {
+    try {
+      jsonLd = JSON.parse(jsonLdMatch[1]);
+    } catch {
+      // ignore parse errors
+    }
+  }
+
+  return {
+    description: getMeta("description") || getMeta("og:description", true),
+    title: getMeta("og:title", true) || getMeta("title"),
+    image: getMeta("og:image", true),
+    jsonLd,
+  };
 }
 
-async function scrapeInstagram(page: puppeteer.Page, handle: string): Promise<SocialProfile> {
-  await page.goto(`https://www.instagram.com/${handle}/`, {
-    waitUntil: "networkidle0",
-    timeout: 30000,
-  });
+// ── Per-platform scrapers ────────────────────────────────────────────────────
 
-  // Wait for meta tags or profile data
-  await page.waitForSelector("meta[property='og:description']", { timeout: 10000 }).catch(() => {});
+async function scrapeInstagram(url: string, handle: string): Promise<SocialProfile> {
+  const html = await fetchPage(
+    `https://www.instagram.com/${handle}/`
+  );
+  const meta = parseMeta(html);
 
-  const data = await page.evaluate(() => {
-    // Try structured data from meta tags
-    const metaDesc = document.querySelector("meta[property='og:description']")?.getAttribute("content") || "";
-    const metaTitle = document.querySelector("meta[property='og:title']")?.getAttribute("content") || "";
-    const metaImage = document.querySelector("meta[property='og:image']")?.getAttribute("content") || "";
-
-    // Parse the description: "123K Followers, 456 Following, 789 Posts"
-    const followerMatch = metaDesc.match(/([\d,.KMNB]+)\s*Followers?/i);
-    const followingMatch = metaDesc.match(/([\d,.KMNB]+)\s*Following/i);
-    const postsMatch = metaDesc.match(/([\d,.KMNB]+)\s*Posts?/i);
-
-    return {
-      metaTitle,
-      metaImage,
-      followers: followerMatch?.[1] || "",
-      following: followingMatch?.[1] || "",
-      posts: postsMatch?.[1] || "",
-      rawDescription: metaDesc,
-    };
-  });
+  // Instagram's og:description: "123K Followers, 456 Following, 789 Posts - See photos..."
+  const desc = meta.description;
+  const followerMatch = desc.match(/([\d,.KMNB]+)\s*Followers?/i);
+  const followingMatch = desc.match(/([\d,.KMNB]+)\s*Following/i);
+  const postsMatch = desc.match(/([\d,.KMNB]+)\s*Posts?/i);
 
   return {
     platform: "instagram",
     handle,
-    displayName: data.metaTitle || handle,
-    followers: data.followers,
-    following: data.following,
-    posts: data.posts,
-    avatarUrl: data.metaImage || undefined,
-    raw: data as Record<string, unknown>,
+    url,
+    displayName: meta.title?.replace(/\s*\(@[\w.]+\)\s*on.*/i, "").trim() || handle,
+    followers: followerMatch?.[1] || undefined,
+    following: followingMatch?.[1] || undefined,
+    posts: postsMatch?.[1] || undefined,
+    bio: meta.description?.split(" - See ")[0] || undefined,
+    avatarUrl: meta.image || undefined,
+    verified: !!(followerMatch || followingMatch || postsMatch),
+    rawDescription: meta.description,
   };
 }
 
-async function scrapeTikTok(page: puppeteer.Page, handle: string): Promise<SocialProfile> {
-  await page.goto(`https://www.tiktok.com/@${handle}`, {
-    waitUntil: "networkidle0",
-    timeout: 30000,
-  });
+async function scrapeYouTube(url: string, handle: string): Promise<SocialProfile> {
+  const fetchUrl = handle.startsWith("UC")
+    ? `https://www.youtube.com/channel/${handle}/about`
+    : `https://www.youtube.com/@${handle}/about`;
 
-  await new Promise((r) => setTimeout(r, 2000));
+  const html = await fetchPage(fetchUrl);
+  const meta = parseMeta(html);
 
-  const data = await page.evaluate(() => {
-    // TikTok loads data in script tags with JSON
-    const metaDesc = document.querySelector("meta[name='description']")?.getAttribute("content") || "";
-    const metaTitle = document.querySelector("meta[property='og:title']")?.getAttribute("content") || "";
-    const metaImage = document.querySelector("meta[property='og:image']")?.getAttribute("content") || "";
+  // YouTube og:description: "123K subscribers, 456 videos, 789K views..."
+  const desc = meta.description;
+  const subMatch = desc.match(/([\d,.KMNB]+)\s*subscriber/i);
+  const viewMatch = desc.match(/([\d,.KMNB]+)\s*view/i);
+  const videoMatch = desc.match(/([\d,.KMNB]+)\s*video/i);
 
-    // Parse: "123M Followers, 456K Likes"
-    const followerMatch = metaDesc.match(/([\d,.KMNB]+)\s*Followers?/i);
-    const likesMatch = metaDesc.match(/([\d,.KMNB]+)\s*Likes?/i);
-
-    return {
-      metaTitle,
-      metaImage,
-      followers: followerMatch?.[1] || "",
-      likes: likesMatch?.[1] || "",
-      rawDescription: metaDesc,
-    };
-  });
-
-  return {
-    platform: "tiktok",
-    handle,
-    displayName: data.metaTitle || handle,
-    followers: data.followers,
-    engagement: {
-      avgLikes: data.likes || undefined,
-    },
-    avatarUrl: data.metaImage || undefined,
-    raw: data as Record<string, unknown>,
-  };
-}
-
-async function scrapeYouTube(page: puppeteer.Page, handle: string): Promise<SocialProfile> {
-  const url = handle.startsWith("UC")
-    ? `https://www.youtube.com/channel/${handle}`
-    : `https://www.youtube.com/@${handle}`;
-
-  await page.goto(url, { waitUntil: "networkidle0", timeout: 30000 });
-  await new Promise((r) => setTimeout(r, 2000));
-
-  const data = await page.evaluate(() => {
-    const metaDesc = document.querySelector("meta[name='description']")?.getAttribute("content") || "";
-    const metaTitle = document.querySelector("meta[property='og:title']")?.getAttribute("content") || "";
-    const metaImage = document.querySelector("meta[property='og:image']")?.getAttribute("content") || "";
-
-    // YouTube subs are sometimes in the description or title
-    const subMatch = metaDesc.match(/([\d,.KMNB]+)\s*subscribers?/i);
-    const viewMatch = metaDesc.match(/([\d,.KMNB]+)\s*views?/i);
-
-    return {
-      metaTitle,
-      metaImage,
-      subscribers: subMatch?.[1] || "",
-      views: viewMatch?.[1] || "",
-      rawDescription: metaDesc,
-    };
-  });
+  // Also try JSON-LD for channel data
+  let fromJsonLd: Partial<SocialProfile> = {};
+  if (meta.jsonLd) {
+    const ld = meta.jsonLd;
+    const interaction = (ld as any)?.interactionStatistic;
+    if (Array.isArray(interaction)) {
+      for (const stat of interaction) {
+        if (stat.interactionType?.includes("Subscribe")) {
+          fromJsonLd.subscribers = formatCount(stat.userInteractionCount);
+        }
+      }
+    }
+  }
 
   return {
     platform: "youtube",
     handle,
-    displayName: data.metaTitle || handle,
-    followers: data.subscribers,
-    engagement: {
-      avgLikes: data.views || undefined,
-    },
-    avatarUrl: data.metaImage || undefined,
-    raw: data as Record<string, unknown>,
+    url,
+    displayName: meta.title?.replace(/\s*- YouTube\s*$/i, "").trim() || handle,
+    subscribers: subMatch?.[1] || fromJsonLd.subscribers || undefined,
+    totalViews: viewMatch?.[1] || undefined,
+    posts: videoMatch?.[1] || undefined,
+    avatarUrl: meta.image || undefined,
+    verified: !!(subMatch || fromJsonLd.subscribers),
+    rawDescription: meta.description,
   };
 }
 
-async function scrapeTwitter(page: puppeteer.Page, handle: string): Promise<SocialProfile> {
-  await page.goto(`https://x.com/${handle}`, {
-    waitUntil: "networkidle0",
-    timeout: 30000,
-  });
+async function scrapeTikTok(url: string, handle: string): Promise<SocialProfile> {
+  const html = await fetchPage(`https://www.tiktok.com/@${handle}`);
+  const meta = parseMeta(html);
 
-  const data = await page.evaluate(() => {
-    const metaDesc = document.querySelector("meta[name='description']")?.getAttribute("content") || "";
-    const metaTitle = document.querySelector("meta[property='og:title']")?.getAttribute("content") || "";
-    const metaImage = document.querySelector("meta[property='og:image']")?.getAttribute("content") || "";
+  // TikTok og:description: "123M Followers, 456M Likes - Watch videos..."
+  const desc = meta.description;
+  const followerMatch = desc.match(/([\d,.KMNB]+)\s*Followers?/i);
+  const likesMatch = desc.match(/([\d,.KMNB]+)\s*Likes?/i);
 
-    const followerMatch = metaDesc.match(/([\d,.KMNB]+)\s*Followers?/i);
+  return {
+    platform: "tiktok",
+    handle,
+    url,
+    displayName: meta.title?.replace(/\s*\(@[\w.]+\).*/i, "").trim() || handle,
+    followers: followerMatch?.[1] || undefined,
+    posts: likesMatch?.[1] || undefined,
+    avatarUrl: meta.image || undefined,
+    verified: !!(followerMatch),
+    rawDescription: meta.description,
+  };
+}
 
-    return {
-      metaTitle,
-      metaImage,
-      followers: followerMatch?.[1] || "",
-      rawDescription: metaDesc,
-    };
-  });
+async function scrapeTwitter(url: string, handle: string): Promise<SocialProfile> {
+  const html = await fetchPage(`https://x.com/${handle}`);
+  const meta = parseMeta(html);
+
+  const desc = meta.description;
+  const followerMatch = desc.match(/([\d,.KMNB]+)\s*Followers?/i);
 
   return {
     platform: "twitter",
     handle,
-    displayName: data.metaTitle || handle,
-    followers: data.followers,
-    avatarUrl: data.metaImage || undefined,
-    raw: data as Record<string, unknown>,
+    url,
+    displayName: meta.title?.replace(/\s*on X.*/i, "").trim() || handle,
+    followers: followerMatch?.[1] || undefined,
+    avatarUrl: meta.image || undefined,
+    verified: !!(followerMatch),
+    rawDescription: meta.description,
   };
 }
 
-// ── Obscura lifecycle ──────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-function isObscuraAvailable(): boolean {
-  try {
-    execSync(`"${getObscuraBin()}" --help`, { stdio: "ignore" });
-    return true;
-  } catch {
-    return false;
-  }
+function formatCount(n: number | undefined): string | undefined {
+  if (!n) return undefined;
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
 }
 
-async function startObscura(): Promise<string> {
-  return new Promise((resolve, reject) => {
-    if (obscuraProcess) {
-      resolve(`ws://127.0.0.1:${OBSCURA_PORT}/devtools/browser`);
-      return;
-    }
-
-    obscuraProcess = spawn(getObscuraBin(), ["serve", "--port", String(OBSCURA_PORT)], {
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-
-    const timeout = setTimeout(() => {
-      reject(new Error("Obscura failed to start within 10s"));
-    }, 10000);
-
-    obscuraProcess.stdout?.on("data", (data: Buffer) => {
-      const msg = data.toString();
-      if (msg.includes("listening") || msg.includes("ws://") || msg.includes("9222")) {
-        clearTimeout(timeout);
-        resolve(`ws://127.0.0.1:${OBSCURA_PORT}/devtools/browser`);
-      }
-    });
-
-    obscuraProcess.stderr?.on("data", (data: Buffer) => {
-      const msg = data.toString();
-      // Obscura may log the WS URL to stderr
-      if (msg.includes("ws://") || msg.includes("listening")) {
-        clearTimeout(timeout);
-        resolve(`ws://127.0.0.1:${OBSCURA_PORT}/devtools/browser`);
-      }
-    });
-
-    obscuraProcess.on("error", (err) => {
-      clearTimeout(timeout);
-      reject(err);
-    });
-
-    obscuraProcess.on("exit", (code) => {
-      clearTimeout(timeout);
-      if (code !== 0) reject(new Error(`Obscura exited with code ${code}`));
-    });
-  });
-}
-
-function stopObscura(): void {
-  if (obscuraProcess) {
-    obscuraProcess.kill("SIGTERM");
-    obscuraProcess = null;
-  }
-}
-
-// ── Public API ─────────────────────────────────────────────────────────────────
+// ── Public API ───────────────────────────────────────────────────────────────
 
 export async function scrapeSocialProfile(url: string): Promise<SocialProfile> {
   const platform = detectPlatform(url);
   if (platform === "unknown") {
-    throw new Error(`Unsupported platform. Supported: Instagram, TikTok, YouTube, Twitter/X`);
-  }
-
-  if (!isObscuraAvailable()) {
     throw new Error(
-      `Obscura not found at ${getObscuraBin()}. Download from https://github.com/h4ckf0r0day/obscura`
+      `Unsupported platform: ${url}. Supported: Instagram, TikTok, YouTube, Twitter/X`
     );
   }
 
-  const wsEndpoint = await startObscura();
   const handle = extractHandle(url, platform);
+  if (!handle) {
+    throw new Error(`Could not extract handle from URL: ${url}`);
+  }
 
-  let browser;
   try {
-    browser = await puppeteer.connect({
-      browserWSEndpoint: wsEndpoint,
-      defaultViewport: { width: 1280, height: 800 },
-    });
-
-    const page = await browser.newPage();
-
-    let result: SocialProfile;
     switch (platform) {
       case "instagram":
-        result = await scrapeInstagram(page, handle);
-        break;
-      case "tiktok":
-        result = await scrapeTikTok(page, handle);
-        break;
+        return await scrapeInstagram(url, handle);
       case "youtube":
-        result = await scrapeYouTube(page, handle);
-        break;
+        return await scrapeYouTube(url, handle);
+      case "tiktok":
+        return await scrapeTikTok(url, handle);
       case "twitter":
-        result = await scrapeTwitter(page, handle);
-        break;
+        return await scrapeTwitter(url, handle);
       default:
         throw new Error(`Unsupported platform: ${platform}`);
     }
-
-    return result;
-  } finally {
-    if (browser) await browser.disconnect();
-    stopObscura();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    // Return a profile indicating scrape failure — caller can check .verified
+    return {
+      platform,
+      handle,
+      url,
+      verified: false,
+      rawDescription: `Scrape failed: ${message}`,
+    };
   }
 }
 
-export { detectPlatform, extractHandle, isObscuraAvailable };
+export { detectPlatform, extractHandle };

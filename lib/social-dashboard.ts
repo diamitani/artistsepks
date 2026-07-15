@@ -91,8 +91,9 @@ export async function buildSocialDashboard(urls: {
       scrapeSocialProfile(url)
         .then((data) => {
           const followers = data.followers ? parseNumber(data.followers) : 0;
-          const likes = data.engagement?.avgLikes ? parseNumber(data.engagement.avgLikes) : 0;
-          const comments = data.engagement?.avgComments ? parseNumber(data.engagement.avgComments) : 0;
+          // Engagement not available from basic scrape — use 0 as default
+          const likes = 0;
+          const comments = 0;
           const rate = followers > 0 ? ((likes + comments) / followers) * 100 : 0;
 
           if (platform === "instagram") {
@@ -108,16 +109,16 @@ export async function buildSocialDashboard(urls: {
           } else if (platform === "tiktok") {
             result.tiktok = {
               followers,
-              likes: parseNumber(data.engagement?.avgLikes || "0"),
-              avgViews: parseNumber(data.raw?.metaDescription as string || "0"),
+              likes: data.posts ? parseNumber(data.posts) : 0,
+              avgViews: 0,
               engagementRate: Math.round(rate * 100) / 100,
               lastFetched: new Date().toISOString(),
             };
           } else if (platform === "youtube") {
             result.youtube = {
-              subscribers: followers,
-              views: parseNumber(data.engagement?.avgLikes || "0"),
-              avgViewsPerVideo: Math.round(likes),
+              subscribers: parseNumber(data.subscribers || data.followers || "0"),
+              views: parseNumber(data.totalViews || "0"),
+              avgViewsPerVideo: 0,
               engagementRate: Math.round(rate * 100) / 100,
               lastFetched: new Date().toISOString(),
             };
