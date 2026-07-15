@@ -503,7 +503,7 @@ export async function POST(request: NextRequest) {
 
   const provider = process.env.AI_PROVIDER || "deepseek";
   const contextSuffix = epkData
-    ? `\n\n[Current EPK state: ${JSON.stringify(epkData)}]`
+    ? `\n\n[EPK progress: ${epkData.artistName || "no name yet"}, template: ${epkData.template || "main"}, fields set: artistName=${!!epkData.artistName} genre=${!!epkData.genre} bio=${!!epkData.bio} stats=${Object.keys(epkData.stats || {}).length} releases=${(epkData.releases || []).length} timeline=${(epkData.timeline || []).length} pressQuotes=${(epkData.pressQuotes || []).length} socialLinks=${Object.keys(epkData.socialLinks || {}).length} bookingEmail=${!!epkData.bookingEmail}]`
     : "";
 
   // Normalise messages

@@ -299,6 +299,8 @@ export default function BuilderPage() {
       };
       setMessages((prev) => [...prev, assistantMsg]);
 
+      let assistantText = "";
+
       try {
         const res = await fetch("/api/agent", {
           method: "POST",
@@ -317,8 +319,6 @@ export default function BuilderPage() {
         const decoder = new TextDecoder();
 
         if (reader) {
-          let assistantText = "";
-
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -375,6 +375,17 @@ export default function BuilderPage() {
               }
             }
           }
+        }
+
+        // Safety net: if agent didn't end with a question, nudge
+        if (assistantText && !assistantText.includes("?")) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, content: assistantText + "\n\nWhat else can you tell me about your music?" }
+                : m
+            )
+          );
         }
       } catch (err) {
         const errMsg =
