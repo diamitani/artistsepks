@@ -21,10 +21,13 @@ capabilities:
     - landing_pages: ["/", "/auth/login", "/auth/signup"]
     - public_pages: ["/epk/{slug}", "/{username}"]
     - builder: ["/builder", "/builder/intake", "/dashboard"]
-    - api_endpoints: ["/api/epk", "/api/profile", "/api/agent", "/api/upload", "/api/export/html", "/api/pdf/render", "/api/venues", "/api/spotify", "/api/social", "/api/social/dashboard", "/api/pexels", "/api/domains", "/api/generate"]
-    - export: ["pdf", "html"]
-    - integrations: ["spotify", "social-scraper", "pexels", "supabase"]
-    - edge_cases: ["404", "demo-mode", "cold-start", "missing-env", "invalid-slug"]
+    - api_endpoints: ["/api/epk", "/api/profile", "/api/agent", "/api/upload", "/api/export/html", "/api/pdf/render", "/api/venues", "/api/spotify", "/api/social", "/api/social/dashboard", "/api/pexels", "/api/domains", "/api/generate", "/api/deploy"]
+    - export: ["pdf", "html", "amplify-deploy"]
+    - auth_backends: ["cognito-jwt", "supabase-fallback"]
+    - storage_backends: ["supabase-epks", "dynamodb-fallback", "demo-mode"]
+    - ai_backends: ["bedrock-claude", "anthropic-fallback"]
+    - integrations: ["spotify", "social-scraper", "pexels", "s3-upload", "amplify-deploy", "pal-compiler"]
+    - edge_cases: ["404", "demo-mode", "cold-start", "missing-env", "invalid-slug", "cognito-unauthenticated", "bedrock-unavailable"]
   dynamic_discovery: true
 
 deployment:
