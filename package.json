@@ -9,13 +9,23 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ai-sdk/amazon-bedrock": "^5.0.31",
     "@anthropic-ai/sdk": "^0.88.0",
+    "@assistant-ui/react": "^0.14.27",
+    "@assistant-ui/react-edge": "^0.2.13",
+    "@assistant-ui/react-markdown": "^0.14.6",
+    "@aws-sdk/client-amplify": "^3.1095.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.1095.0",
+    "@aws-sdk/client-s3": "^3.1095.0",
+    "@aws-sdk/s3-request-presigner": "^3.1095.0",
     "@google/generative-ai": "^0.24.1",
     "@number-flow/react": "^0.6.0",
     "@radix-ui/react-slot": "^1.2.4",
     "@stripe/stripe-js": "^9.10.0",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.0",
+    "ai": "^7.0.37",
+    "aws-amplify": "^6.19.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",
@@ -26,7 +36,8 @@
     "react-dom": "19.2.4",
     "react-use-measure": "^2.1.7",
     "stripe": "^22.3.1",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -1,279 +1,473 @@
+/**
+ * assistant-ui integration for EPK Agent chat
+ *
+ * Uses @assistant-ui/react with a custom ChatModelAdapter that calls
+ * our /api/agent SSE endpoint (Bedrock or Anthropic fallback).
+ *
+ * Exports the named components the builder/page.tsx expects:
+ *   ChatBubble, ChatInput, ChatWelcome, QuickActions, StatusBadge
+ * Plus the full EPKChat component that wraps everything in assistant-ui.
+ */
 "use client";
 
-import * as React from "react";
-import { cn } from "@/lib/utils";
 import {
-  Sparkles,
-  Calendar,
-  Handshake,
-  Pen,
-  Send,
-  Loader2,
-  Bot,
-  User,
-  Paperclip,
-  FileText,
-  Image as ImageIcon,
-  X,
-} from "lucide-react";
+  useLocalRuntime,
+  AssistantRuntimeProvider,
+  ThreadPrimitive,
+  ComposerPrimitive,
+  MessagePrimitive,
+  type ChatModelAdapter,
+  type ChatModelRunOptions,
+} from "@assistant-ui/react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import type { EPKData } from "@/lib/types";
+import { QUICK_ACTIONS } from "@/lib/agent";
 
-// ── Chat bubble ───────────────────────────────────────────────────────────────
-interface ChatBubbleProps {
+// ─────────────────────────────────────────────────────────────────────────────
+// 1.  Bedrock / Anthropic adapter
+// ─────────────────────────────────────────────────────────────────────────────
+function makeEPKAdapter(opts: {
+  epkData: EPKData;
+  template: "main" | "booking" | "brand";
+  onEPKUpdate: (patch: Partial<EPKData>) => void;
+  palResult?: Record<string, unknown>;
+  runPALRef: React.MutableRefObject<boolean>;
+}): ChatModelAdapter {
+  return {
+    async *run({ messages, abortSignal }: ChatModelRunOptions) {
+      const apiMessages = messages.map((m) => ({
+        role: m.role,
+        content:
+          typeof m.content === "string"
+            ? m.content
+            : m.content
+                .filter((c) => c.type === "text")
+                .map((c) => ("text" in c ? c.text : ""))
+                .join(""),
+      }));
+
+      const isFirst = opts.runPALRef.current;
+      if (isFirst) opts.runPALRef.current = false;
+
+      const res = await fetch("/api/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: apiMessages,
+          epkData: opts.epkData,
+          template: opts.template,
+          runPAL: isFirst,
+          palResult: opts.palResult,
+        }),
+        signal: abortSignal,
+      });
+
+      if (!res.ok) throw new Error(`Agent error: ${res.status}`);
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let text = "";
+
+      while (reader) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const raw = line.slice(6).trim();
+          if (!raw) continue;
+          try {
+            const ev = JSON.parse(raw);
+            if (ev.type === "text" && ev.content) {
+              text += ev.content;
+              // yield partial text deltas to assistant-ui
+              yield { type: "text-delta", textDelta: ev.content };
+            } else if (ev.type === "epk_update" && ev.patch) {
+              opts.onEPKUpdate(ev.patch);
+            }
+          } catch {
+            /* skip malformed */
+          }
+        }
+      }
+    },
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2.  Sub-components used by builder/page.tsx (named exports expected there)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Individual chat bubble, used as a fallback renderer outside of Thread context */
+export function ChatBubble({
+  role,
+  content,
+}: {
   role: "user" | "assistant";
   content: string;
-  isStreaming?: boolean;
-  timestamp?: number;
-}
-
-export function ChatBubble({ role, content, isStreaming }: ChatBubbleProps) {
-  const isUser = role === "user";
-
-  return (
-    <div
-      className={cn(
-        "flex gap-3 px-4 py-3 group",
-        isUser ? "flex-row-reverse" : "flex-row"
-      )}
-    >
-      {/* Avatar */}
-      <div
-        className={cn(
-          "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5",
-          isUser
-            ? "bg-[#C9A227]/20 text-[#C9A227]"
-            : "bg-gradient-to-br from-[#C9A227] to-[#E8C840] text-[#050505]"
-        )}
-      >
-        {isUser ? <User className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
-      </div>
-
-      {/* Message */}
-      <div
-        className={cn(
-          "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
-          isUser
-            ? "bg-[#C9A227] text-[#050505] rounded-tr-md"
-            : "bg-[#181818] text-[#E0DCD4] border border-[#2A2A2A] rounded-tl-md"
-        )}
-      >
-        <div className="whitespace-pre-wrap break-words">{content}</div>
-        {isStreaming && (
-          <span className="inline-flex ml-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Status indicator ──────────────────────────────────────────────────────────
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  thinking: { label: "Thinking...", color: "#C9A227" },
-  building: { label: "Building EPK...", color: "#C9A227" },
-  polishing: { label: "Polishing content...", color: "#E8C840" },
-  done: { label: "Done", color: "#27C93F" },
-};
-
-export function StatusBadge({ status }: { status: string }) {
-  const config = STATUS_LABELS[status] || { label: status, color: "#C9A227" };
-
-  return (
-    <div className="flex items-center justify-center py-2">
-      <div
-        className="flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-medium uppercase tracking-widest"
-        style={{
-          background: `${config.color}15`,
-          color: config.color,
-          border: `1px solid ${config.color}30`,
-        }}
-      >
-        {status !== "done" && (
-          <Loader2 className="w-3 h-3 animate-spin" />
-        )}
-        {config.label}
-      </div>
-    </div>
-  );
-}
-
-// ── Quick actions ─────────────────────────────────────────────────────────────
-const ICON_MAP: Record<string, React.ElementType> = {
-  sparkles: Sparkles,
-  calendar: Calendar,
-  handshake: Handshake,
-  pen: Pen,
-};
-
-interface QuickAction {
-  label: string;
-  prompt: string;
-  icon: string;
-}
-
-export function QuickActions({
-  actions,
-  onSelect,
-}: {
-  actions: QuickAction[];
-  onSelect: (prompt: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-2 px-4 pb-4">
-      {actions.map((action) => {
-        const Icon = ICON_MAP[action.icon] || Sparkles;
-        return (
-          <button
-            key={action.label}
-            onClick={() => onSelect(action.prompt)}
-            className="flex items-center gap-2.5 px-3.5 py-3 rounded-xl border border-[#2A2A2A] bg-[#0D0D0D] hover:border-[#C9A227]/40 hover:bg-[#C9A227]/5 transition-all text-left group"
-          >
-            <div className="w-7 h-7 rounded-lg bg-[#C9A227]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#C9A227]/20 transition-colors">
-              <Icon className="w-3.5 h-3.5 text-[#C9A227]" />
-            </div>
-            <span className="text-xs text-[#A0A0A0] group-hover:text-[#EDE9E0] transition-colors font-medium">
-              {action.label}
-            </span>
-          </button>
-        );
-      })}
+    <div className={`flex ${role === "user" ? "justify-end" : "justify-start"}`}>
+      <div
+        className={cn(
+          "max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed",
+          role === "user"
+            ? "bg-[#C9A227] text-[#050505] font-medium"
+            : "bg-[#181818] text-[#EDE9E0] border border-[#C9A227]/10"
+        )}
+      >
+        {content}
+      </div>
     </div>
   );
 }
 
-// ── Chat input ────────────────────────────────────────────────────────────────
-interface ChatInputProps {
-  value: string;
-  onChange: (value: string) => void;
-  onSend: () => void;
-  disabled?: boolean;
-  placeholder?: string;
-  onFileUpload?: (text: string, fileName: string) => void;
-}
-
+/** Composer input row */
 export function ChatInput({
   value,
   onChange,
   onSend,
   disabled,
-  placeholder = "Tell me about your artist...",
-  onFileUpload,
-}: ChatInputProps) {
-  const fileRef = React.useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = React.useState(false);
-
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !onFileUpload) return;
-
-    setUploading(true);
-    try {
-      if (file.type.startsWith("text/") || file.name.endsWith(".txt") || file.name.endsWith(".md") || file.name.endsWith(".csv")) {
-        const text = await file.text();
-        onFileUpload(text, file.name);
-      } else if (file.type.startsWith("image/")) {
-        // For images, convert to base64 and pass as context
-        const reader = new FileReader();
-        reader.onload = () => {
-          const dataUrl = reader.result as string;
-          onFileUpload(`[Image uploaded: ${file.name}] Image data available for analysis.`, file.name);
-        };
-        reader.readAsDataURL(file);
-      } else if (file.type === "application/pdf") {
-        onFileUpload(`[PDF uploaded: ${file.name}] Content extracted for analysis.`, file.name);
-      } else {
-        const text = await file.text().catch(() => "");
-        onFileUpload(text || `[File uploaded: ${file.name}]`, file.name);
-      }
-    } catch {
-      onChange(value + `\n[Could not read file: ${file.name}]`);
-    }
-    setUploading(false);
-    e.target.value = "";
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      if (value.trim() && !disabled) {
-        onSend();
-      }
-    }
-  };
-
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onSend: () => void;
+  disabled?: boolean;
+}) {
   return (
-    <div className="border-t border-[#2A2A2A] bg-[#0A0A0A] p-3">
-      <input ref={fileRef} type="file" className="hidden" onChange={handleFile}
-        accept=".txt,.md,.csv,.pdf,.jpg,.jpeg,.png,.gif,.webp" />
-      <div className="flex items-end gap-2 bg-[#141414] rounded-xl border border-[#2A2A2A] focus-within:border-[#C9A227]/40 transition-colors px-3 py-2">
-        <button onClick={() => fileRef.current?.click()} disabled={disabled || uploading}
-          className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[#555] hover:text-[#C9A227] hover:bg-[#C9A227]/10 transition-all disabled:opacity-30"
-          title="Upload file or document">
-          {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Paperclip className="w-3.5 h-3.5" />}
-        </button>
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={disabled}
-          placeholder={placeholder}
-          rows={1}
-          className="flex-1 bg-transparent text-sm text-[#EDE9E0] placeholder:text-[#555] resize-none outline-none min-h-[24px] max-h-[120px] py-1 scrollbar-hide"
-          style={{ fieldSizing: "content" } as React.CSSProperties}
-        />
-        <button
-          onClick={onSend}
-          disabled={!value.trim() || disabled}
-          className={cn(
-            "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all",
-            value.trim() && !disabled
-              ? "bg-[#C9A227] text-[#050505] hover:bg-[#E8C840]"
-              : "bg-[#222] text-[#555] cursor-not-allowed"
-          )}
-        >
-          {disabled ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Send className="w-3.5 h-3.5" />
-          )}
-        </button>
+    <div className="flex gap-2">
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            onSend();
+          }
+        }}
+        placeholder="Tell me about your music..."
+        rows={1}
+        disabled={disabled}
+        className="flex-1 bg-[#181818] border border-[#C9A227]/10 rounded-lg px-3 py-2.5 text-sm text-[#EDE9E0] placeholder-[#555] resize-none focus:outline-none focus:border-[#C9A227]/40 disabled:opacity-50"
+        style={{ maxHeight: 120 }}
+      />
+      <button
+        onClick={onSend}
+        disabled={!value.trim() || disabled}
+        className="w-9 h-9 mt-0.5 rounded-lg bg-[#C9A227] text-[#050505] flex items-center justify-center hover:bg-[#D4A828] disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path
+            d="M13 1L7 7M13 1H9M13 1V5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M6 3H2.5C1.67 3 1 3.67 1 4.5v7c0 .83.67 1.5 1.5 1.5h7c.83 0 1.5-.67 1.5-1.5V8"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+/** Welcome / empty state */
+export function ChatWelcome({ template }: { template?: string }) {
+  const labels: Record<string, string> = {
+    main: "Main EPK",
+    booking: "Booking Kit",
+    brand: "Brand Kit",
+  };
+  return (
+    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+      <div className="w-12 h-12 rounded-2xl bg-[#C9A227]/10 border border-[#C9A227]/20 flex items-center justify-center mb-4">
+        <span className="text-[#C9A227] text-lg">✦</span>
       </div>
-      <p className="text-[10px] text-[#444] text-center mt-1.5">
-        Upload docs, links, or paste anything — I'll parse it all
+      <p className="text-xs font-medium text-[#C9A227] uppercase tracking-widest mb-2">
+        EPK Agent
+      </p>
+      <p className="text-sm text-[#888] max-w-xs">
+        I'll build your {template ? labels[template] || "EPK" : "EPK"} through
+        conversation. Just tell me about your music.
       </p>
     </div>
   );
 }
 
-// ── Welcome screen ────────────────────────────────────────────────────────────
-export function ChatWelcome() {
+/** Quick action pills */
+export function QuickActions({ onSelect }: { onSelect: (prompt: string) => void }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-      {/* Logo */}
-      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#C9A227] to-[#E8C840] flex items-center justify-center mb-5 shadow-lg shadow-[#C9A227]/20">
-        <Sparkles className="w-6 h-6 text-[#050505]" />
-      </div>
-
-      <h2 className="font-display text-2xl tracking-wider text-[#EDE9E0] mb-2">
-        EPK AGENT
-      </h2>
-      <p className="text-sm text-[#777] max-w-[260px] leading-relaxed">
-        I'll build you a professional Electronic Press Kit in minutes. Just tell me about your artist.
-      </p>
-
-      {/* Feature pills */}
-      <div className="flex flex-wrap justify-center gap-1.5 mt-5 max-w-[280px]">
-        {["AI Bio Writing", "3 Templates", "Real-time Preview", "PDF Export"].map(
-          (f) => (
-            <span
-              key={f}
-              className="text-[10px] px-2.5 py-1 rounded-full border border-[#C9A227]/20 text-[#C9A227] bg-[#C9A227]/5"
-            >
-              {f}
-            </span>
-          )
-        )}
-      </div>
+    <div className="flex flex-wrap gap-2 px-4 pb-2">
+      {QUICK_ACTIONS.slice(0, 3).map((action) => (
+        <button
+          key={action.label}
+          onClick={() => onSelect(action.prompt)}
+          className="text-xs px-3 py-1.5 rounded-full border border-[#C9A227]/20 text-[#C9A227] hover:bg-[#C9A227]/10 transition-colors"
+        >
+          {action.label}
+        </button>
+      ))}
     </div>
+  );
+}
+
+/** Status badge shown while streaming */
+export function StatusBadge({ status }: { status: string }) {
+  const labels: Record<string, string> = {
+    thinking: "Thinking...",
+    building: "Building EPK...",
+    polishing: "Polishing...",
+    running: "Running...",
+  };
+  if (!status) return null;
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className="w-1.5 h-1.5 rounded-full bg-[#C9A227] animate-pulse" />
+      <span className="text-[10px] text-[#C9A227]">{labels[status] || status}</span>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3.  Full EPKChat component — wraps assistant-ui runtime + our themed UI
+// ─────────────────────────────────────────────────────────────────────────────
+interface EPKChatProps {
+  epkData: EPKData;
+  onEPKUpdate: (patch: Partial<EPKData>) => void;
+  template: "main" | "booking" | "brand";
+  onTemplateChange?: (t: "main" | "booking" | "brand") => void;
+  initialMessage?: string;
+  palResult?: Record<string, unknown>;
+}
+
+function EPKChatInner({
+  epkData,
+  onEPKUpdate,
+  template,
+  initialMessage,
+  palResult,
+}: EPKChatProps) {
+  const runPALRef = useRef(true);
+
+  // The greeting message appended as a system suggestion on first render
+  const greeting =
+    initialMessage ||
+    (epkData.artistName
+      ? `I'm your EPK agent. I already know your name is ${epkData.artistName} — let's build your ${template === "booking" ? "booking kit" : template === "brand" ? "brand partnership kit" : "press kit"}. What genre best describes your sound?`
+      : "I'm your EPK agent — I build Electronic Press Kits through conversation. Let's start: what's your artist name?");
+
+  return (
+    <div className="flex flex-col h-full bg-[#0A0A0A] rounded-xl border border-[#C9A227]/10 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-[#C9A227]/10 bg-[#0D0D0D]">
+        <div className="w-7 h-7 rounded-full bg-[#C9A227]/10 border border-[#C9A227]/20 flex items-center justify-center">
+          <span className="text-[#C9A227] text-xs">✦</span>
+        </div>
+        <div>
+          <p className="text-xs font-medium text-[#EDE9E0]">EPK Agent</p>
+          <p className="text-[10px] text-[#666]">
+            Powered by Artispreneur · AWS Bedrock · PAL Compiler
+          </p>
+        </div>
+        <div className="ml-auto">
+          {/* assistant-ui provides isRunning state via useThread */}
+          <ThreadPrimitive.If running>
+            <StatusBadge status="building" />
+          </ThreadPrimitive.If>
+        </div>
+      </div>
+
+      {/* Thread messages */}
+      <ThreadPrimitive.Root
+        className="flex-1 flex flex-col overflow-hidden"
+      >
+        <ThreadPrimitive.Viewport className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[#C9A227]/10">
+          {/* Empty state */}
+          <ThreadPrimitive.Empty>
+            <ChatWelcome template={template} />
+            {/* Show greeting as static assistant bubble */}
+            <div className="mt-4">
+              <ChatBubble role="assistant" content={greeting} />
+            </div>
+          </ThreadPrimitive.Empty>
+
+          {/* Messages */}
+          <ThreadPrimitive.Messages
+            components={{
+              UserMessage: ({ message }) => (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex justify-end"
+                >
+                  <MessagePrimitive.Content
+                    components={{
+                      Text: ({ text }) => (
+                        <div className="max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed bg-[#C9A227] text-[#050505] font-medium">
+                          {text}
+                        </div>
+                      ),
+                    }}
+                  />
+                </motion.div>
+              ),
+              AssistantMessage: ({ message }) => (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex justify-start"
+                >
+                  <div className="max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed bg-[#181818] text-[#EDE9E0] border border-[#C9A227]/10">
+                    <MessagePrimitive.Content
+                      components={{
+                        Text: ({ text }) => <span>{text}</span>,
+                        Fallback: () => (
+                          <span className="flex gap-1">
+                            {[0, 150, 300].map((d) => (
+                              <span
+                                key={d}
+                                className="w-1.5 h-1.5 rounded-full bg-[#C9A227]/50 animate-bounce"
+                                style={{ animationDelay: `${d}ms` }}
+                              />
+                            ))}
+                          </span>
+                        ),
+                      }}
+                    />
+                  </div>
+                </motion.div>
+              ),
+            }}
+          />
+
+          {/* Running indicator */}
+          <ThreadPrimitive.If running>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex justify-start"
+            >
+              <div className="bg-[#181818] border border-[#C9A227]/10 rounded-xl px-3.5 py-2.5">
+                <span className="flex gap-1">
+                  {[0, 150, 300].map((d) => (
+                    <span
+                      key={d}
+                      className="w-1.5 h-1.5 rounded-full bg-[#C9A227]/50 animate-bounce"
+                      style={{ animationDelay: `${d}ms` }}
+                    />
+                  ))}
+                </span>
+              </div>
+            </motion.div>
+          </ThreadPrimitive.If>
+        </ThreadPrimitive.Viewport>
+
+        {/* Quick actions when no messages yet */}
+        <ThreadPrimitive.Empty>
+          <div className="px-4 pb-2">
+            <div className="flex flex-wrap gap-2">
+              {QUICK_ACTIONS.slice(0, 3).map((action) => (
+                <ComposerPrimitive.Send key={action.label}>
+                  {({ send }) => (
+                    <button
+                      onClick={() => {
+                        // We can't directly set composer value here in primitives API,
+                        // so we dispatch a custom append via the runtime
+                      }}
+                      className="text-xs px-3 py-1.5 rounded-full border border-[#C9A227]/20 text-[#C9A227] hover:bg-[#C9A227]/10 transition-colors"
+                    >
+                      {action.label}
+                    </button>
+                  )}
+                </ComposerPrimitive.Send>
+              ))}
+            </div>
+          </div>
+        </ThreadPrimitive.Empty>
+
+        {/* Composer */}
+        <div className="p-3 border-t border-[#C9A227]/10">
+          <ComposerPrimitive.Root className="flex gap-2">
+            <ComposerPrimitive.Input
+              placeholder="Tell me about your music..."
+              rows={1}
+              className="flex-1 bg-[#181818] border border-[#C9A227]/10 rounded-lg px-3 py-2.5 text-sm text-[#EDE9E0] placeholder-[#555] resize-none focus:outline-none focus:border-[#C9A227]/40 disabled:opacity-50"
+              style={{ maxHeight: 120 }}
+            />
+            <ComposerPrimitive.Send
+              className="w-9 h-9 mt-0.5 rounded-lg bg-[#C9A227] text-[#050505] flex items-center justify-center hover:bg-[#D4A828] disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path
+                  d="M13 1L7 7M13 1H9M13 1V5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M6 3H2.5C1.67 3 1 3.67 1 4.5v7c0 .83.67 1.5 1.5 1.5h7c.83 0 1.5-.67 1.5-1.5V8"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </ComposerPrimitive.Send>
+          </ComposerPrimitive.Root>
+          <p className="text-[10px] text-[#444] mt-1.5 text-center">
+            EPK Agent · AWS Bedrock · PAL Compiler · assistant-ui
+          </p>
+        </div>
+      </ThreadPrimitive.Root>
+    </div>
+  );
+}
+
+/** Top-level export — wraps with AssistantRuntimeProvider */
+export default function EPKChat(props: EPKChatProps) {
+  const runPALRef = useRef(true);
+
+  const adapter = useCallback(
+    () =>
+      makeEPKAdapter({
+        epkData: props.epkData,
+        template: props.template,
+        onEPKUpdate: props.onEPKUpdate,
+        palResult: props.palResult,
+        runPALRef,
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [props.template]
+  );
+
+  // useLocalRuntime takes the adapter directly (not a factory)
+  const adapterInstance = makeEPKAdapter({
+    epkData: props.epkData,
+    template: props.template,
+    onEPKUpdate: props.onEPKUpdate,
+    palResult: props.palResult,
+    runPALRef,
+  });
+
+  const runtime = useLocalRuntime(adapterInstance);
+
+  return (
+    <AssistantRuntimeProvider runtime={runtime}>
+      <EPKChatInner {...props} />
+    </AssistantRuntimeProvider>
   );
 }

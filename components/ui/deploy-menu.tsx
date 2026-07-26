@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Globe, Download, Check, Copy, ExternalLink, Loader2 } from "lucide-react";
+import { Globe, Download, Check, Copy, ExternalLink, Loader2, Rocket, Cloud } from "lucide-react";
 import type { EPKData } from "@/lib/types";
 
 interface Props {
@@ -12,33 +12,30 @@ interface Props {
 export function DeployMenu({ data, slug }: Props) {
   const [open, setOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [deploying, setDeploying] = useState(false);
+  const [deployResult, setDeployResult] = useState<{ url: string; message: string } | null>(null);
   const [copied, setCopied] = useState(false);
-  const [deployUrl, setDeployUrl] = useState("");
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  // Export standalone HTML zip
   const handleExportHtml = async () => {
     if (!data.artistName) return;
     setExporting(true);
-
     try {
       const res = await fetch("/api/export/html", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ data }),
       });
-
       if (!res.ok) throw new Error("Export failed");
-
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -51,28 +48,58 @@ export function DeployMenu({ data, slug }: Props) {
     } catch (e) {
       console.error("Export failed:", e);
     }
-
     setExporting(false);
     setOpen(false);
   };
 
-  const handleCopyDeployUrl = () => {
+  // Deploy to AWS Amplify
+  const handleDeployAmplify = async () => {
+    if (!data.artistName) return;
+    setDeploying(true);
+
+    try {
+      // First get the HTML content
+      const htmlRes = await fetch("/api/export/html", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data }),
+      });
+      const htmlText = await htmlRes.text();
+
+      // Deploy via AWS Amplify API
+      const deployRes = await fetch("/api/deploy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          epkSlug: slug || data.artistName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+          artistName: data.artistName,
+          htmlContent: htmlText,
+        }),
+      });
+
+      const result = await deployRes.json();
+      if (result.siteUrl || result.url) {
+        setDeployResult({
+          url: result.siteUrl || result.url,
+          message: result.demo
+            ? "Demo mode — configure AWS credentials for live deployment"
+            : "Site deployed via AWS Amplify!",
+        });
+      }
+    } catch (e) {
+      console.error("Amplify deploy failed:", e);
+    }
+    setDeploying(false);
+  };
+
+  const handleCopyLink = () => {
     const url = slug
       ? `${window.location.origin}/epk/${slug}`
       : `${window.location.origin}/builder`;
-    setDeployUrl(url);
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
-  const vercelUrl = slug
-    ? `https://vercel.com/new/clone?repository-url=${encodeURIComponent("https://github.com/vercel/next.js/tree/canary/examples/hello-world")}&env=NEXT_PUBLIC_EPK_SLUG=${slug}&envDescription=Your+EPK+slug+from+ArtistEPKs`
-    : "https://vercel.com/new";
-
-  const netlifyUrl = slug
-    ? `https://app.netlify.com/start/deploy?repository=${encodeURIComponent("https://github.com/vercel/next.js/tree/canary/examples/hello-world")}`
-    : "https://app.netlify.com";
 
   if (!data.artistName) return null;
 
@@ -80,101 +107,124 @@ export function DeployMenu({ data, slug }: Props) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#333] text-[#888] text-[10px] font-medium tracking-wider uppercase hover:border-[#C9A227]/30 hover:text-[#C9A227] transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#333] text-[#888] text-[10px] font-medium tracking-wider uppercase hover:border-[#C9A227]/30 hover:text-[#C9A227] transition-all"
       >
         <Globe className="w-3 h-3" />
-        Deploy
+        Publish
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[280px] bg-[#0D0D0D] border border-[#2A2A2A] rounded-xl shadow-2xl z-50 overflow-hidden">
-          {/* Export standalone */}
-          <div className="p-3 border-b border-[#1E1E1E]">
+        <div className="absolute right-0 top-full mt-2 w-64 bg-[#111] border border-[#222] rounded-xl shadow-2xl z-50 overflow-hidden">
+          <div className="px-4 py-3 border-b border-[#1A1A1A]">
+            <p className="text-xs font-medium text-[#EDE9E0] uppercase tracking-wider">Publish EPK</p>
+            <p className="text-[10px] text-[#555] mt-0.5">Choose how to share your press kit</p>
+          </div>
+
+          <div className="p-2 space-y-1">
+            {/* Copy hosted link */}
             <button
-              onClick={handleExportHtml}
-              disabled={exporting}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#181818] transition-colors text-left group"
+              onClick={handleCopyLink}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#1A1A1A] transition-colors text-left group"
             >
-              <div className="w-8 h-8 rounded-lg bg-[#181818] flex items-center justify-center group-hover:bg-[#C9A227]/10 transition-colors">
-                {exporting ? (
-                  <Loader2 className="w-4 h-4 text-[#C9A227] animate-spin" />
+              <div className="w-7 h-7 rounded-lg bg-[#C9A227]/10 flex items-center justify-center flex-shrink-0">
+                {copied ? (
+                  <Check className="w-3.5 h-3.5 text-[#C9A227]" />
                 ) : (
-                  <Download className="w-4 h-4 text-[#C9A227]" />
+                  <Copy className="w-3.5 h-3.5 text-[#C9A227]" />
                 )}
               </div>
               <div>
-                <div className="text-xs font-medium text-[#EDE9E0]">Download Standalone HTML</div>
-                <div className="text-[9px] text-[#666] mt-0.5">Self-contained .zip for any host</div>
+                <p className="text-xs text-[#EDE9E0] font-medium">
+                  {copied ? "Copied!" : "Copy Hosted Link"}
+                </p>
+                <p className="text-[10px] text-[#555]">Share at epks.artispreneur.com/epk/…</p>
               </div>
             </button>
-          </div>
 
-          {/* One-click deploy */}
-          <div className="p-3 border-b border-[#1E1E1E]">
-            <div className="text-[9px] text-[#555] uppercase tracking-wider font-medium px-3 mb-2">
-              One-click Deploy
-            </div>
-            <div className="space-y-1.5">
+            {/* Download PDF */}
+            {slug && (
               <a
-                href={vercelUrl}
+                href={`/api/pdf/${slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#181818] transition-colors group"
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#1A1A1A] transition-colors text-left block"
+                onClick={() => setOpen(false)}
               >
-                <div className="w-8 h-8 rounded-lg bg-[#181818] flex items-center justify-center group-hover:bg-white/5 transition-colors">
-                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="white">
-                    <polygon points="12 2 24 21 0 21" />
-                  </svg>
+                <div className="w-7 h-7 rounded-lg bg-[#C9A227]/10 flex items-center justify-center flex-shrink-0">
+                  <Download className="w-3.5 h-3.5 text-[#C9A227]" />
                 </div>
                 <div>
-                  <div className="text-xs font-medium text-[#EDE9E0]">Vercel</div>
-                  <div className="text-[9px] text-[#666] mt-0.5">Deploy in one click</div>
+                  <p className="text-xs text-[#EDE9E0] font-medium">Download PDF</p>
+                  <p className="text-[10px] text-[#555]">Print-ready for email & booking</p>
                 </div>
-                <ExternalLink className="w-3 h-3 text-[#555] ml-auto" />
               </a>
-              <a
-                href={netlifyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#181818] transition-colors group"
-              >
-                <div className="w-8 h-8 rounded-lg bg-[#181818] flex items-center justify-center group-hover:bg-[#00AD9F]/10 transition-colors">
-                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="#00AD9F">
-                    <path d="M6.5 2L2 6.5V17.5L6.5 22H17.5L22 17.5V6.5L17.5 2H6.5Z" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="text-xs font-medium text-[#EDE9E0]">Netlify</div>
-                  <div className="text-[9px] text-[#666] mt-0.5">Deploy with Netlify</div>
-                </div>
-                <ExternalLink className="w-3 h-3 text-[#555] ml-auto" />
-              </a>
-            </div>
+            )}
+
+            {/* Download standalone HTML */}
+            <button
+              onClick={handleExportHtml}
+              disabled={exporting}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#1A1A1A] transition-colors text-left disabled:opacity-50"
+            >
+              <div className="w-7 h-7 rounded-lg bg-[#C9A227]/10 flex items-center justify-center flex-shrink-0">
+                {exporting ? (
+                  <Loader2 className="w-3.5 h-3.5 text-[#C9A227] animate-spin" />
+                ) : (
+                  <ExternalLink className="w-3.5 h-3.5 text-[#C9A227]" />
+                )}
+              </div>
+              <div>
+                <p className="text-xs text-[#EDE9E0] font-medium">
+                  {exporting ? "Exporting..." : "Download HTML Site"}
+                </p>
+                <p className="text-[10px] text-[#555]">Self-host anywhere</p>
+              </div>
+            </button>
+
+            {/* AWS Amplify deploy */}
+            <button
+              onClick={handleDeployAmplify}
+              disabled={deploying}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#1A1A1A] transition-colors text-left disabled:opacity-50"
+            >
+              <div className="w-7 h-7 rounded-lg bg-[#FF9900]/10 flex items-center justify-center flex-shrink-0">
+                {deploying ? (
+                  <Loader2 className="w-3.5 h-3.5 text-[#FF9900] animate-spin" />
+                ) : (
+                  <Cloud className="w-3.5 h-3.5 text-[#FF9900]" />
+                )}
+              </div>
+              <div>
+                <p className="text-xs text-[#EDE9E0] font-medium">
+                  {deploying ? "Deploying..." : "Deploy via AWS Amplify"}
+                </p>
+                <p className="text-[10px] text-[#555]">Get your own .amplifyapp.com URL</p>
+              </div>
+            </button>
+
+            {/* Deploy result */}
+            {deployResult && (
+              <div className="mx-3 mt-2 p-3 rounded-lg bg-[#0D1F0D] border border-green-900/30">
+                <p className="text-[10px] text-green-400 font-medium mb-1">
+                  {deployResult.message}
+                </p>
+                <a
+                  href={deployResult.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-[#C9A227] break-all hover:underline"
+                >
+                  {deployResult.url}
+                </a>
+              </div>
+            )}
           </div>
 
-          {/* Copy live URL */}
-          {slug && (
-            <div className="p-3">
-              <button
-                onClick={handleCopyDeployUrl}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#181818] transition-colors group"
-              >
-                <div className="w-8 h-8 rounded-lg bg-[#181818] flex items-center justify-center group-hover:bg-[#C9A227]/10 transition-colors">
-                  {copied ? (
-                    <Check className="w-4 h-4 text-green-400" />
-                  ) : (
-                    <Copy className="w-4 h-4 text-[#C9A227]" />
-                  )}
-                </div>
-                <div>
-                  <div className="text-xs font-medium text-[#EDE9E0]">Copy Live URL</div>
-                  <div className="text-[9px] text-[#666] mt-0.5 truncate max-w-[180px]">
-                    {deployUrl || "artistsepks.com/epk/..."}
-                  </div>
-                </div>
-              </button>
-            </div>
-          )}
+          <div className="px-4 py-2.5 border-t border-[#1A1A1A]">
+            <p className="text-[9px] text-[#444] text-center">
+              AWS Bedrock · Amplify · S3 · Artispreneur
+            </p>
+          </div>
         </div>
       )}
     </div>

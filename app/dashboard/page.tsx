@@ -5,7 +5,8 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
+import { authGetCurrentUser, authSignOut } from "@/lib/aws-auth";
+import { createClient, hasSupabase } from "@/lib/supabase/client";
 import { PLANS, canCreateEPK } from "@/lib/plans";
 import type { PlanId } from "@/lib/plans";
 import {
@@ -23,6 +24,8 @@ import {
   Crown,
   ArrowUpRight,
   BadgeCheck,
+  Zap,
+  Rocket,
 } from "lucide-react";
 
 interface EPKRow {
@@ -58,9 +61,22 @@ export default function DashboardPage() {
   const [planState, setPlanState] = useState<PlanState>({ plan: "free", status: "inactive" });
   const [loading, setLoading] = useState(true);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [userName, setUserName] = useState<string>("");
 
   async function loadDashboard() {
     setLoading(true);
+
+    // Get current user — try Cognito first, then Supabase
+    try {
+      const cognitoUser = await authGetCurrentUser();
+      if (cognitoUser) {
+        setUserName(cognitoUser.name || cognitoUser.email || "");
+      } else if (hasSupabase) {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) setUserName(user.user_metadata?.name || user.email || "");
+      }
+    } catch { /* ok */ }
 
     // Load plan
     try {
@@ -69,25 +85,18 @@ export default function DashboardPage() {
     } catch { /* ignore */ }
 
     // Load EPKs
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    if (!supabaseUrl || supabaseUrl.includes("your-project")) {
-      setEpks([]);
-      setIsDemoMode(true);
-      setLoading(false);
-      return;
-    }
-
     try {
       const res = await fetch("/api/epk");
       if (res.status === 401) {
-        setEpks([]);
         setIsDemoMode(true);
       } else if (res.ok) {
         const { epks: rows } = await res.json();
         setEpks(rows || []);
+        if (!rows || rows.length === 0) setIsDemoMode(true);
+      } else {
+        setIsDemoMode(true);
       }
     } catch {
-      setEpks([]);
       setIsDemoMode(true);
     }
 
@@ -100,8 +109,12 @@ export default function DashboardPage() {
   }, []);
 
   async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    // Sign out of both Cognito and Supabase
+    await authSignOut();
+    if (hasSupabase) {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    }
     window.location.href = "/";
   }
 
@@ -110,276 +123,256 @@ export default function DashboardPage() {
       const res = await fetch("/api/stripe/portal", { method: "POST" });
       const { url, error } = await res.json();
       if (url) window.location.href = url;
-      else alert(error || "Could not open portal");
+      else alert(error || "Could not open subscription portal.");
     } catch {
-      alert("Something went wrong");
+      alert("Could not open subscription portal.");
     }
   }
 
-  const totalViews = epks.reduce((s, e) => s + e.views, 0);
-  const totalDownloads = epks.reduce((s, e) => s + e.downloads, 0);
-  const planInfo = PLANS[planState.plan];
+  const plan = PLANS[planState.plan] || PLANS.free;
   const canCreate = canCreateEPK(planState.plan, epks.length);
 
+  // Demo EPK cards for empty/unauthenticated state
+  const DEMO_EPKS: EPKRow[] = [
+    { id: "demo-1", slug: "your-artist", template: "main", data: { artistName: "Your Artist" }, views: 0, downloads: 0, updated_at: new Date().toISOString() },
+  ];
+
+  const displayEpks = epks.length > 0 ? epks : isDemoMode ? [] : [];
+
   return (
-    <div className="min-h-screen bg-[#050505] flex">
-      {/* Sidebar */}
-      <aside className="w-56 border-r border-[#C9A227]/10 flex flex-col py-6 px-4 hidden md:flex">
-        <Link href="/" className="flex items-center gap-2 mb-8 px-2">
-          <div className="w-6 h-6 rounded bg-[#C9A227] flex items-center justify-center">
-            <Music2 className="w-3 h-3 text-[#050505]" />
-          </div>
-          <span className="font-display text-sm tracking-wider text-[#EDE9E0]">EPK AGENT</span>
+    <main className="min-h-screen bg-[#050505]">
+      {/* Top nav */}
+      <nav className="border-b border-[#1A1A1A] bg-[#080808] px-6 py-3 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2.5">
+          <img
+            src="/artispreneur%20logo.png"
+            alt="Artispreneur"
+            width="28"
+            height="28"
+            className="w-7 h-7 rounded object-contain"
+          />
+          <span className="font-display text-xs tracking-[0.2em] text-[#EDE9E0] uppercase">
+            EPK Agent
+          </span>
         </Link>
-
-        <nav className="flex-1 space-y-1">
-          {[
-            { icon: FileText, label: "My EPKs", href: "/dashboard", active: true },
-            { icon: TrendingUp, label: "Analytics", href: "/dashboard/analytics" },
-            { icon: Globe, label: "Custom Domains", href: "/dashboard/domains" },
-            { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-          ].map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
-                item.active
-                  ? "bg-[#C9A227]/10 text-[#C9A227]"
-                  : "text-[#A0A0A0] hover:text-[#EDE9E0] hover:bg-[#181818]"
-              )}
-            >
-              <item.icon className="w-4 h-4" />
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="border-t border-[#C9A227]/10 pt-4">
+        <div className="flex items-center gap-3">
+          {userName && (
+            <span className="text-xs text-[#666] hidden sm:block">
+              {userName}
+            </span>
+          )}
           <button
             onClick={handleSignOut}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#A0A0A0] hover:text-[#EDE9E0] w-full transition-colors"
+            className="flex items-center gap-1.5 text-xs text-[#666] hover:text-[#EDE9E0] transition-colors"
           >
-            <LogOut className="w-4 h-4" />
-            Sign Out
+            <LogOut className="w-3.5 h-3.5" />
+            Sign out
           </button>
         </div>
-      </aside>
+      </nav>
 
-      {/* Main */}
-      <main className="flex-1 p-6 md:p-10 overflow-y-auto">
-        {/* Plan Banner */}
-        {planState.plan === "free" && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 rounded-xl border border-[#C9A227]/20 bg-gradient-to-r from-[#C9A227]/10 to-[#C9A227]/5 p-4 flex items-center justify-between"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#C9A227]/20 flex items-center justify-center">
-                <Crown className="w-4 h-4 text-[#C9A227]" />
-              </div>
-              <div>
-                <p className="text-sm text-[#EDE9E0] font-medium">Free EPK — View Only</p>
-                <p className="text-xs text-[#A0A0A0]">Unlock editing, styles, and premium designs starting at $9.99</p>
-              </div>
-            </div>
-            <Button variant="gold" size="sm" asChild className="rounded-full">
-              <Link href="/#pricing">Upgrade Style <ArrowUpRight className="w-3 h-3" /></Link>
-            </Button>
-          </motion.div>
-        )}
-
-        {/* Paid plan active banner */}
-        {planState.plan !== "free" && planState.status === "complete" && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 rounded-xl border border-[#27C93F]/20 bg-[#27C93F]/5 p-4 flex items-center justify-between"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#27C93F]/20 flex items-center justify-center">
-                <BadgeCheck className="w-4 h-4 text-[#27C93F]" />
-              </div>
-              <div>
-                <p className="text-sm text-[#EDE9E0] font-medium">{planInfo?.name} Active</p>
-                <p className="text-xs text-[#A0A0A0]">Editing and {planInfo?.canStyle ? "style customization" : "updates"} unlocked</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
+      <div className="max-w-6xl mx-auto px-6 py-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-start justify-between mb-8">
           <div>
-            <h1 className="font-display text-2xl tracking-wider text-[#EDE9E0]">
-              MY PRESS KITS
+            <h1 className="font-display text-2xl tracking-wider text-[#EDE9E0] mb-1">
+              YOUR EPK DASHBOARD
             </h1>
-            <p className="text-xs text-[#A0A0A0] mt-0.5">
-              {isDemoMode
-                ? "Demo mode — set up Supabase to save your EPKs"
-                : `${epks.length} EPK${epks.length !== 1 ? "s" : ""} · ${planInfo?.name} plan`}
+            <p className="text-sm text-[#666]">
+              Manage your Electronic Press Kits, exports, and deployments
             </p>
           </div>
-          {canCreate ? (
-            <Button variant="gold" size="sm" asChild>
-              <Link href="/builder">
-                <Plus className="w-3.5 h-3.5" />
-                New EPK
-              </Link>
+          <Link href="/builder">
+            <Button
+              variant="gold"
+              className="flex items-center gap-2 rounded-full"
+              disabled={!canCreate}
+            >
+              <Plus className="w-4 h-4" />
+              New EPK
             </Button>
-          ) : planState.plan === "free" ? (
-            <Button variant="gold" size="sm" asChild>
-              <Link href="/#pricing">
-                <Crown className="w-3.5 h-3.5" />
-                Upgrade to Create EPK
-              </Link>
-            </Button>
-          ) : !canCreate ? (
-            <p className="text-xs text-[#C9A227]">EPK limit reached — purchase a plan to create more</p>
-          ) : null}
+          </Link>
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          {[
-            { label: "Total EPKs", value: epks.length.toString(), icon: FileText },
-            { label: "Total Views", value: totalViews.toLocaleString(), icon: Globe },
-            { label: "PDF Downloads", value: totalDownloads.toString(), icon: Download },
-          ].map((s) => (
-            <div
-              key={s.label}
-              className="rounded-xl border border-[#C9A227]/10 bg-[#0D0D0D] p-5"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <s.icon className="w-4 h-4 text-[#C9A227]" />
-                <span className="text-xs text-[#A0A0A0] uppercase tracking-wider">
-                  {s.label}
-                </span>
-              </div>
-              <div className="font-display text-3xl text-[#C9A227] tracking-wider">
-                {s.value}
-              </div>
+        {/* Plan status bar */}
+        <div className="rounded-xl border border-[#C9A227]/10 bg-[#0D0D0D] p-4 mb-8 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-[#C9A227]/10 flex items-center justify-center">
+              <Crown className="w-4 h-4 text-[#C9A227]" />
             </div>
+            <div>
+              <p className="text-xs font-medium text-[#EDE9E0] uppercase tracking-wider">
+                {plan.name} Plan
+              </p>
+              <p className="text-[10px] text-[#666]">
+                {epks.length} / {plan.maxEPKs === Infinity ? "∞" : plan.maxEPKs} EPKs
+                {planState.currentPeriodEnd && (
+                  <> · Renews {new Date(planState.currentPeriodEnd).toLocaleDateString()}</>
+                )}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {planState.plan !== "pro" && (
+              <button
+                onClick={handleManageSubscription}
+                className="text-xs text-[#C9A227] border border-[#C9A227]/20 rounded-full px-3 py-1.5 hover:bg-[#C9A227]/10 transition-colors"
+              >
+                Upgrade
+              </button>
+            )}
+            {planState.plan === "pro" && (
+              <button
+                onClick={handleManageSubscription}
+                className="text-xs text-[#666] hover:text-[#888] transition-colors"
+              >
+                Manage subscription
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* EPK grid */}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-6 h-6 text-[#C9A227] animate-spin" />
+          </div>
+        ) : displayEpks.length === 0 ? (
+          // Empty state
+          <div className="rounded-2xl border border-dashed border-[#C9A227]/20 p-12 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-[#C9A227]/10 border border-[#C9A227]/20 flex items-center justify-center mx-auto mb-4">
+              <Music2 className="w-8 h-8 text-[#C9A227]" />
+            </div>
+            <h2 className="font-display text-xl tracking-wider text-[#EDE9E0] mb-2">
+              NO EPKs YET
+            </h2>
+            <p className="text-sm text-[#666] mb-6 max-w-xs mx-auto">
+              The agent will interview you and build your first Electronic Press Kit in minutes.
+            </p>
+            <Link href="/builder">
+              <Button variant="gold" className="rounded-full">
+                Build Your First EPK
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {displayEpks.map((epk, i) => (
+              <motion.div
+                key={epk.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.06 }}
+                className="rounded-xl border border-[#C9A227]/10 bg-[#0D0D0D] p-5 hover:border-[#C9A227]/25 transition-all"
+              >
+                {/* Template badge */}
+                <div className="flex items-start justify-between mb-4">
+                  <div
+                    className="h-0.5 w-12 rounded-full"
+                    style={{ background: TEMPLATE_COLORS[epk.template] }}
+                  />
+                  <span
+                    className="text-[9px] font-medium tracking-[0.2em] uppercase px-2 py-0.5 rounded-full border"
+                    style={{
+                      color: TEMPLATE_COLORS[epk.template],
+                      borderColor: `${TEMPLATE_COLORS[epk.template]}30`,
+                    }}
+                  >
+                    {TEMPLATE_LABELS[epk.template]}
+                  </span>
+                </div>
+
+                <h3 className="font-display text-lg tracking-wider text-[#EDE9E0] mb-1 truncate">
+                  {epk.data?.artistName || "Untitled EPK"}
+                </h3>
+                <p className="text-[10px] text-[#555] mb-4">
+                  Updated {new Date(epk.updated_at).toLocaleDateString()}
+                </p>
+
+                {/* Stats */}
+                <div className="flex gap-4 mb-4">
+                  <div>
+                    <p className="text-xs font-medium text-[#EDE9E0]">{epk.views || 0}</p>
+                    <p className="text-[9px] text-[#555] uppercase tracking-wider">Views</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-[#EDE9E0]">{epk.downloads || 0}</p>
+                    <p className="text-[9px] text-[#555] uppercase tracking-wider">Downloads</p>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <Link href={`/builder?slug=${epk.slug}`} className="flex-1">
+                    <button className="w-full flex items-center justify-center gap-1.5 text-xs py-2 rounded-lg border border-[#333] text-[#888] hover:border-[#C9A227]/30 hover:text-[#C9A227] transition-all">
+                      <Edit2 className="w-3.5 h-3.5" />
+                      Edit
+                    </button>
+                  </Link>
+                  <Link href={`/epk/${epk.slug}`} target="_blank" className="flex-1">
+                    <button className="w-full flex items-center justify-center gap-1.5 text-xs py-2 rounded-lg border border-[#333] text-[#888] hover:border-[#C9A227]/30 hover:text-[#C9A227] transition-all">
+                      <Eye className="w-3.5 h-3.5" />
+                      View
+                    </button>
+                  </Link>
+                  <Link href={`/api/pdf/${epk.slug}`} target="_blank">
+                    <button className="flex items-center justify-center gap-1.5 text-xs py-2 px-3 rounded-lg border border-[#333] text-[#888] hover:border-[#C9A227]/30 hover:text-[#C9A227] transition-all">
+                      <Download className="w-3.5 h-3.5" />
+                    </button>
+                  </Link>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        {/* Feature quicklinks */}
+        <div className="grid md:grid-cols-3 gap-4 mt-10">
+          {[
+            {
+              icon: Rocket,
+              title: "Deploy Online Site",
+              desc: "Publish your EPK as a standalone website via AWS Amplify",
+              href: "/builder",
+              color: "#C9A227",
+            },
+            {
+              icon: FileText,
+              title: "Download PDF",
+              desc: "Print-ready PDF for email attachments and booking inquiries",
+              href: "/builder",
+              color: "#C9A227",
+            },
+            {
+              icon: TrendingUp,
+              title: "Analytics",
+              desc: "See who's viewing and downloading your EPK",
+              href: "/dashboard",
+              color: "#C9A227",
+            },
+          ].map((item, i) => (
+            <motion.div
+              key={item.title}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 + i * 0.07 }}
+            >
+              <Link href={item.href}>
+                <div className="rounded-xl border border-[#C9A227]/10 bg-[#0D0D0D] p-4 hover:border-[#C9A227]/25 transition-all group cursor-pointer">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-[#C9A227]/10 flex items-center justify-center">
+                      <item.icon className="w-4 h-4 text-[#C9A227]" />
+                    </div>
+                    <ArrowUpRight className="w-3.5 h-3.5 text-[#444] group-hover:text-[#C9A227] transition-colors ml-auto" />
+                  </div>
+                  <p className="text-xs font-medium text-[#EDE9E0] mb-0.5">{item.title}</p>
+                  <p className="text-[10px] text-[#555]">{item.desc}</p>
+                </div>
+              </Link>
+            </motion.div>
           ))}
         </div>
-
-        {/* EPK cards */}
-        <div className="space-y-4">
-          {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-6 h-6 text-[#C9A227] animate-spin" />
-            </div>
-          ) : (
-            <>
-              {epks.map((epk, i) => {
-                const color = TEMPLATE_COLORS[epk.template];
-                const artistName = epk.data?.artistName || "Untitled Artist";
-                const updatedDate = epk.updated_at?.slice(0, 10) || "";
-
-                return (
-                  <motion.div
-                    key={epk.id}
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.08 }}
-                    className="rounded-xl border border-[#C9A227]/10 bg-[#0D0D0D] p-5 flex items-center gap-5"
-                  >
-                    <div
-                      className="w-1 h-12 rounded-full flex-shrink-0"
-                      style={{ background: color }}
-                    />
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="font-semibold text-[#EDE9E0] text-sm">
-                          {artistName}
-                        </span>
-                        <span
-                          className="text-[10px] px-2 py-0.5 rounded uppercase tracking-wider font-medium"
-                          style={{ background: `${color}20`, color }}
-                        >
-                          {TEMPLATE_LABELS[epk.template]}
-                        </span>
-                      </div>
-                      <p className="text-xs text-[#555]">
-                        artistsepks.com/epk/{epk.slug} · Updated {updatedDate}
-                      </p>
-                    </div>
-
-                    <div className="hidden md:flex items-center gap-6 text-center">
-                      <div>
-                        <div className="text-sm font-semibold text-[#EDE9E0]">
-                          {epk.views.toLocaleString()}
-                        </div>
-                        <div className="text-[10px] text-[#555] uppercase tracking-wider">
-                          Views
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold text-[#EDE9E0]">
-                          {epk.downloads}
-                        </div>
-                        <div className="text-[10px] text-[#555] uppercase tracking-wider">
-                          Downloads
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/epk/${epk.slug}`}
-                        target="_blank"
-                        className="p-2 rounded-lg text-[#A0A0A0] hover:text-[#EDE9E0] hover:bg-[#181818] transition-colors"
-                        title="View EPK"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Link>
-                      <a
-                        href={`/api/pdf/${epk.slug}`}
-                        download
-                        className="p-2 rounded-lg text-[#A0A0A0] hover:text-[#EDE9E0] hover:bg-[#181818] transition-colors"
-                        title="Download PDF"
-                      >
-                        <Download className="w-4 h-4" />
-                      </a>
-                      <Link
-                        href={`/builder?edit=${epk.id}`}
-                        className="p-2 rounded-lg text-[#A0A0A0] hover:text-[#EDE9E0] hover:bg-[#181818] transition-colors"
-                        title="Edit EPK"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Link>
-                    </div>
-                  </motion.div>
-                );
-              })}
-
-              {/* Empty / Create new card */}
-              {canCreate && (
-                <Link
-                  href="/builder"
-                  className="block rounded-xl border border-dashed border-[#333] p-5 text-center hover:border-[#C9A227]/30 transition-colors group"
-                >
-                  <Plus className="w-5 h-5 text-[#555] group-hover:text-[#C9A227] mx-auto mb-1 transition-colors" />
-                  <p className="text-sm text-[#555] group-hover:text-[#A0A0A0] transition-colors">
-                    Create a new EPK
-                  </p>
-                </Link>
-              )}
-
-              {epks.length === 0 && !canCreate && (
-                <div className="text-center py-10">
-                  <Music2 className="w-10 h-10 text-[#333] mx-auto mb-3" />
-                  <p className="text-sm text-[#555]">
-                    No EPKs yet. Upgrade to create your first one.
-                  </p>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }
