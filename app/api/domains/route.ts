@@ -1,116 +1,57 @@
+/**
+ * /api/domains — custom domain CRUD
+ * Auth: Cognito JWT → demo session
+ * Storage: DynamoDB artispreneur-domains
+ */
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { resolveUserId, listDomains, createDomain, deleteDomain, isAwsConfigured } from "@/lib/aws-db";
 
-async function getSupabase() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://placeholder.supabase.co",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "placeholder",
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: (cookiesToSet) =>
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          ),
-      },
-    }
-  );
+export async function GET(req: NextRequest) {
+  const userId = resolveUserId(req);
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  try {
+    const domains = await listDomains(userId);
+    return NextResponse.json({ domains });
+  } catch {
+    return NextResponse.json({ domains: [] });
+  }
 }
 
-// GET /api/domains — list current user's custom domains
-export async function GET() {
-  const supabase = await getSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
+export async function POST(req: NextRequest) {
+  const userId = resolveUserId(req);
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data, error } = await supabase
-    .from("domains")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ domains: data || [] });
-}
-
-// POST /api/domains — add a custom domain
-export async function POST(request: NextRequest) {
-  const supabase = await getSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const body = await request.json();
-  const { domain, epkSlug } = body;
-
+  const { domain, epkSlug } = await req.json();
   if (!domain || !epkSlug) {
-    return NextResponse.json({ error: "domain and epkSlug are required" }, { status: 400 });
+    return NextResponse.json({ error: "domain and epkSlug required" }, { status: 400 });
   }
 
-  // Verify the domain doesn't already exist
-  const { data: existing } = await supabase
-    .from("domains")
-    .select("id")
-    .eq("domain", domain)
-    .maybeSingle();
-
-  if (existing) {
-    return NextResponse.json({ error: "Domain already registered" }, { status: 409 });
-  }
-
-  const { data, error } = await supabase
-    .from("domains")
-    .insert({
+  try {
+    const record = await createDomain({
+      id: `dom_${Date.now()}`,
+      user_id: userId,
       domain,
       epk_slug: epkSlug,
-      user_id: user.id,
       verified: false,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    });
+    return NextResponse.json(record);
+  } catch {
+    return NextResponse.json({ error: "Could not register domain" }, { status: 500 });
   }
-
-  return NextResponse.json({ domain: data }, { status: 201 });
 }
 
-// DELETE /api/domains — remove a custom domain
-export async function DELETE(request: NextRequest) {
-  const supabase = await getSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
+export async function DELETE(req: NextRequest) {
+  const userId = resolveUserId(req);
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { id } = await req.json();
+  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+  try {
+    await deleteDomain(id, userId);
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "Could not delete domain" }, { status: 500 });
   }
-
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-
-  if (!id) {
-    return NextResponse.json({ error: "domain id is required" }, { status: 400 });
-  }
-
-  const { error } = await supabase
-    .from("domains")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", user.id);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ success: true });
 }

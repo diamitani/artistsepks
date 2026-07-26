@@ -1,52 +1,35 @@
-import { NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+/**
+ * /api/user/plan — GET current user's plan
+ * Auth: Cognito JWT → demo session
+ * Storage: DynamoDB artispreneur-plans → free fallback
+ */
+import { NextRequest, NextResponse } from "next/server";
+import { resolveUserId, getPlan, DEMO_USER_ID } from "@/lib/aws-db";
 import type { PlanId } from "@/lib/plans";
 
-async function getSupabase() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: (cookiesToSet) =>
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          ),
-      },
+export async function GET(req: NextRequest) {
+  const userId = resolveUserId(req);
+
+  // Unauthenticated — return free plan (not 401, lets dashboard render)
+  if (!userId) {
+    return NextResponse.json({ plan: "free", status: "inactive" });
+  }
+
+  // Demo user always gets free plan
+  if (userId === DEMO_USER_ID) {
+    return NextResponse.json({ plan: "free", status: "active", demo: true });
+  }
+
+  try {
+    const record = await getPlan(userId);
+    if (record) {
+      return NextResponse.json({
+        plan: record.plan as PlanId,
+        status: record.status,
+        currentPeriodEnd: record.current_period_end,
+      });
     }
-  );
-}
+  } catch { /* DynamoDB not configured */ }
 
-export async function GET() {
-  const supabase = await getSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ plan: "free", status: "inactive" });
-  }
-
-  // Find subscription linked to this user
-  const { data: sub } = await supabase
-    .from("subscriptions")
-    .select("plan, status, current_period_end, customer_email")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (!sub) {
-    return NextResponse.json({ plan: "free", status: "inactive" });
-  }
-
-  return NextResponse.json({
-    plan: sub.plan as PlanId,
-    status: sub.status,
-    currentPeriodEnd: sub.current_period_end,
-    email: sub.customer_email,
-  });
+  return NextResponse.json({ plan: "free", status: "inactive" });
 }

@@ -66,7 +66,7 @@ export default function DashboardPage() {
   async function loadDashboard() {
     setLoading(true);
 
-    // Get current user — try Cognito first, then Supabase
+    // Get current user — try Cognito first, then Supabase, then demo cookie
     try {
       const cognitoUser = await authGetCurrentUser();
       if (cognitoUser) {
@@ -75,6 +75,10 @@ export default function DashboardPage() {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) setUserName(user.user_metadata?.name || user.email || "");
+      } else {
+        // Check demo session cookie
+        const demoCookie = document.cookie.includes("epk-demo-session=active");
+        if (demoCookie) setUserName("Demo User");
       }
     } catch { /* ok */ }
 
@@ -109,12 +113,14 @@ export default function DashboardPage() {
   }, []);
 
   async function handleSignOut() {
-    // Sign out of both Cognito and Supabase
+    // Sign out of Cognito, Supabase, and demo session
     await authSignOut();
     if (hasSupabase) {
       const supabase = createClient();
       await supabase.auth.signOut();
     }
+    // Clear demo session cookie
+    await fetch("/api/auth/demo", { method: "DELETE" }).catch(() => {});
     window.location.href = "/";
   }
 

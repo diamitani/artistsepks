@@ -1,79 +1,51 @@
+/**
+ * /api/epk/[id] — PATCH/DELETE a specific EPK
+ * Auth: Cognito JWT → demo session
+ */
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
 import type { EPKData } from "@/lib/types";
+import { resolveUserId, updateEPK, deleteEPK, getDemoStore } from "@/lib/aws-db";
 
-async function getSupabase() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://placeholder.supabase.co",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "placeholder",
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: (cookiesToSet) =>
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          ),
-      },
-    }
-  );
-}
-
-// PATCH /api/epk/[id] — update EPK data
 export async function PATCH(
-  request: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await getSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = resolveUserId(req);
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const body: Partial<EPKData> = await req.json();
+
+  try {
+    const ok = await updateEPK(id, userId, { data: body as Record<string, unknown>, template: body.template });
+    if (ok) return NextResponse.json({ success: true });
+  } catch { /* DynamoDB not configured */ }
+
+  // Demo in-memory fallback
+  const { epks } = getDemoStore();
+  const existing = epks.get(id);
+  if (existing && existing.user_id === userId) {
+    epks.set(id, { ...existing, data: body as Record<string, unknown>, template: body.template || existing.template, updated_at: new Date().toISOString() });
+    return NextResponse.json({ success: true });
   }
 
-  const body: Partial<EPKData> = await request.json();
-
-  const { error } = await supabase
-    .from("epks")
-    .update({ data: body, template: body.template })
-    .eq("id", id)
-    .eq("user_id", user.id);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, demo: true });
 }
 
-// DELETE /api/epk/[id] — delete EPK
 export async function DELETE(
-  _request: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await getSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = resolveUserId(req);
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  try {
+    await deleteEPK(id, userId);
+    return NextResponse.json({ success: true });
+  } catch { /* DynamoDB not configured */ }
 
-  const { error } = await supabase
-    .from("epks")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", user.id);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ success: true });
+  const { epks } = getDemoStore();
+  epks.delete(id);
+  return NextResponse.json({ success: true, demo: true });
 }

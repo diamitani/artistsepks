@@ -137,6 +137,21 @@ export default function LoginPage() {
           </Suspense>
         </div>
 
+        {/* Demo access — prominent, no login needed */}
+        <div className="mt-4 rounded-xl border border-[#C9A227]/20 bg-[#0D0D0D] p-4 text-center">
+          <p className="text-xs text-[#888] mb-3">
+            Want to test the full builder without an account?
+          </p>
+          <a
+            href="/auth/demo"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#C9A227]/10 border border-[#C9A227]/30 text-[#C9A227] text-xs font-medium hover:bg-[#C9A227]/20 transition-colors"
+          >
+            <span>✦</span>
+            Try Demo — No Account Needed
+          </a>
+          <p className="text-[9px] text-[#444] mt-2">Full builder + dashboard · 24h session</p>
+        </div>
+
         <p className="text-center text-[10px] text-[#444] mt-6">
           Powered by Artispreneur · AWS Cognito · Secure Auth
         </p>
