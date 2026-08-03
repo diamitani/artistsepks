@@ -15,12 +15,51 @@ const bebasNeue = Bebas_Neue({
 });
 
 export const metadata: Metadata = {
-  title: "EPK Agent — Create Professional Press Kits with AI",
-  description: "Build, manage, and share your Electronic Press Kit in minutes. AI-powered content, professional templates, PDF export, and hosted pages.",
+  title: "Artispreneur — Artist Electronic Press Kits | AI-Powered EPK Builder",
+  description:
+    "Create professional Electronic Press Kits in minutes. AI writes your bio, pulls your stats, and builds a stunning hosted page + PDF. Built for independent artists, bands, and music professionals.",
+  keywords: [
+    "EPK builder",
+    "electronic press kit",
+    "artist press kit",
+    "music press kit",
+    "booking kit",
+    "AI press kit",
+    "artist portfolio",
+    "music industry",
+  ],
   openGraph: {
-    title: "EPK Agent",
-    description: "Create professional EPKs with AI",
+    title: "Artispreneur — Artist Electronic Press Kits",
+    description:
+      "AI-powered press kits that get you booked. Professional templates, Spotify integration, PDF export, and hosted pages.",
     type: "website",
+    siteName: "Artispreneur",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Artispreneur — Artist EPK Builder",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Artispreneur — Artist EPK Builder",
+    description:
+      "AI-powered press kits that get you booked. Professional templates, Spotify integration, PDF export, and hosted pages.",
+    images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 
@@ -29,8 +68,34 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://artistepks.com";
+  const orgSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Artispreneur",
+    url: siteUrl,
+    logo: `${siteUrl}/artispreneur-logo.png`,
+    description:
+      "AI-powered Electronic Press Kit builder for independent artists, bands, and music professionals.",
+    sameAs: [
+      "https://artispreneur.com",
+    ],
+    offers: {
+      "@type": "Service",
+      name: "EPK Builder",
+      description:
+        "Create professional Electronic Press Kits with AI-powered bio writing, Spotify integration, and professional templates.",
+    },
+  };
+
   return (
     <html lang="en" className={`${dmSans.variable} ${bebasNeue.variable}`}>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
+        />
+      </head>
       <body className="min-h-screen flex flex-col">
         <div className="grain-overlay" aria-hidden="true" />
         <div className="flex-1">{children}</div>
@@ -42,7 +107,7 @@ export default function RootLayout({
               rel="noopener noreferrer"
               className="flex items-center gap-2.5 group"
             >
-              <img src="/artispreneur%20logo.png" alt="Artispreneur" width="20" height="20" className="w-5 h-5 rounded flex-shrink-0 object-contain" />
+              <img src="/artispreneur-logo.png" alt="Artispreneur" width="20" height="20" className="w-5 h-5 rounded flex-shrink-0 object-contain" />
               <span className="text-[11px] text-[#777] group-hover:text-[#C0272D] transition-colors tracking-wider uppercase font-medium">
                 Powered by <span className="text-[#EDE9E0] group-hover:text-[#F5C100]">Artispreneur</span>
               </span>

@@ -14,20 +14,20 @@ import {
 } from "lucide-react";
 
 // ── Logo ──────────────────────────────────────────────────────────────────────
-function ArtistsLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
+function ArtispreneurLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const s = size === "sm" ? 0.75 : size === "lg" ? 1.35 : 1;
   return (
     <div className="flex items-center gap-2" style={{ transform: `scale(${s})`, transformOrigin: "left center" }}>
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect width="32" height="32" rx="7" fill="#C9A227" />
-        <path d="M7 24L13.5 8h5L25 24h-4.2l-1.3-3.4H12.5L11.2 24H7z" fill="#050505" />
-        <path d="M13.8 17.2h4.4" stroke="#C9A227" strokeWidth="2" strokeLinecap="round" />
-        <path d="M10.5 19.5 Q11.5 17 12.5 19.5" stroke="#050505" strokeWidth="1.1" fill="none" strokeLinecap="round" />
-        <path d="M19.5 19.5 Q20.5 17 21.5 19.5" stroke="#050505" strokeWidth="1.1" fill="none" strokeLinecap="round" />
+        <path d="M6 22L11 9h3l4 13h-3l-1-3H10l-1 3H6z" fill="#050505" />
+        <circle cx="16" cy="14" r="1.5" fill="#C9A227" />
+        <circle cx="20.5" cy="16" r="1.5" fill="#C9A227" />
+        <line x1="13" y1="20" x2="22" y2="20" stroke="#050505" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
       <div className="flex flex-col leading-none">
-        <span className="font-display text-[13px] tracking-[0.18em] text-[#EDE9E0] uppercase">Artists</span>
-        <span className="font-display text-[13px] tracking-[0.18em] text-[#C9A227] uppercase">EPKs</span>
+        <span className="font-display text-[13px] tracking-[0.10em] text-[#EDE9E0] uppercase">Artispreneur</span>
+        <span className="font-display text-[10px] tracking-[0.18em] text-[#C9A227] uppercase">EPKs</span>
       </div>
     </div>
   );
@@ -53,7 +53,7 @@ function Nav() {
     )}>
       <div className="mx-auto max-w-7xl px-6 lg:px-12">
         <div className="flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5"><ArtistsLogo /></Link>
+          <Link href="/" className="flex items-center gap-2.5"><ArtispreneurLogo /></Link>
           <nav className="hidden md:flex items-center gap-8">
             {["Features", "Templates", "Pricing", "FAQ"].map((l) => (
               <a key={l} href={`#${l.toLowerCase()}`} className="text-sm text-[#A0A0A0] hover:text-[#EDE9E0] transition-colors">{l}</a>
@@ -402,16 +402,33 @@ function Pricing() {
 // ── FAQ ───────────────────────────────────────────────────────────────────────
 const FAQS = [
   { q: "What is an EPK?", a: "An Electronic Press Kit (EPK) is your professional resume for the music industry — bio, music, photos, stats, press, and contact info all in one place." },
-  { q: "What's the difference between Free and paid?", a: "Free gives you a shareable artist profile with AI bio and PDF. The $99 EPK unlocks your full press kit with all sections, embeds, and a high-res PDF. Pro adds unlimited updates, all 3 templates, and roster management." },
-  { q: "How does the AI content generation work?", a: "You fill in the basics — who you are, your sound, key achievements. Our AI rewrites it into compelling press-ready copy. Free profiles get one generation." },
-  { q: "Can I manage EPKs for multiple artists?", a: "Yes. The Pro plan includes roster management so managers and labels can maintain EPKs for all their artists from one account." },
-  { q: "How is this different from a website builder?", a: "Every section — bio formatting, technical riders, certification badges, booking packages — is pre-designed for what industry professionals expect. No templates, no drag-and-drop." },
+  { q: "What's the difference between Free and paid?", a: "Free builds your full EPK using our AI agent — you get a shareable hosted page. Paid tiers ($9.99, $20, $49) unlock editing, style customization, PDF export, and premium design options. Each is a one-time purchase per EPK." },
+  { q: "How does the AI content generation work?", a: "Our AI agent interviews you about your music, career, and brand. It pulls your stats from Spotify and social media automatically, then writes a press-ready bio and assembles your EPK. Free includes one full build." },
+  { q: "Can I upgrade after buying?", a: "Yes. Start with Edit Access ($9.99), then upgrade to Style Pro or Premium anytime. You only pay the difference when upgrading." },
+  { q: "How is this different from a website builder?", a: "Every section — bio formatting, technical riders, certification badges, booking packages — is pre-designed for what industry professionals expect. No drag-and-drop, no decision fatigue. Purpose-built for music." },
 ];
 
 function FAQ() {
   const [open, setOpen] = useState<number | null>(null);
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQS.map((faq) => ({
+      "@type": "Question",
+      name: faq.q,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.a,
+      },
+    })),
+  };
+
   return (
     <section id="faq" className="py-24 md:py-32 bg-[#0D0D0D]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
       <div className="mx-auto max-w-3xl px-6">
         <div className="text-center mb-12">
           <Badge variant="gold" className="mb-4">FAQ</Badge>
