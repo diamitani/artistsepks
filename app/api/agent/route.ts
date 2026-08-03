@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { BedrockRuntimeClient, InvokeModelWithResponseStreamCommand } from "@aws-sdk/client-bedrock-runtime";
 import { AGENT_SYSTEM_PROMPT, EPK_UPDATE_TOOL, SPOTIFY_FETCH_TOOL, SOCIAL_SCRAPE_TOOL, FETCH_PAGE_TOOL, ADD_RIDER_TOOL } from "@/lib/agent";
 import { buildEPKSystemInstructions, palCompile, ALL_EPK_TOOLS, isBedrockConfigured } from "@/lib/bedrock-agent";
+import { isConfigured as isDeepSeekConfigured, streamDeepSeek, type DeepSeekMessage } from "@/lib/deepseek";
 import { fetchSpotifyData } from "@/lib/spotify";
 import { scrapeSocialProfile } from "@/lib/social-scraper";
 import { fetchPageText } from "@/lib/fetch-page";
@@ -134,12 +135,18 @@ export async function POST(req: NextRequest) {
 
         sendSSE(controller, encoder, { type: "status", status: "building" });
 
-        // Step 3: Route to Bedrock or Anthropic
-        if (isBedrockConfigured()) {
+        // Step 3: Route to DeepSeek → Anthropic → Bedrock
+        if (isDeepSeekConfigured()) {
+          await streamWithDeepSeek(messages, systemInstructions, controller, encoder);
+        } else if (process.env.ANTHROPIC_API_KEY) {
+          await streamWithAnthropic(messages, systemInstructions, controller, encoder);
+        } else if (isBedrockConfigured()) {
           await streamWithBedrock(messages, systemInstructions, controller, encoder);
         } else {
-          // Fallback to Anthropic direct
-          await streamWithAnthropic(messages, systemInstructions, controller, encoder);
+          sendSSE(controller, encoder, {
+            type: "text",
+            content: "No AI provider configured. Set DEEPSEEK_API_KEY, ANTHROPIC_API_KEY, or AWS credentials.",
+          });
         }
       } catch (err) {
         console.error("Agent error:", err);
@@ -250,6 +257,83 @@ async function streamWithBedrock(
   sendSSE(controller, encoder, { type: "status", status: "done" });
   sendSSE(controller, encoder, { type: "done" });
   controller.close();
+}
+
+// ── DeepSeek streaming ────────────────────────────────────────────────────────
+async function streamWithDeepSeek(
+  messages: unknown[],
+  systemInstructions: string,
+  controller: ReadableStreamDefaultController,
+  encoder: TextEncoder
+) {
+  // Convert Anthropic-format tools to DeepSeek/OpenAI format
+  const deepSeekTools = ALL_EPK_TOOLS.map((t) => {
+    const tool = t as { name: string; description: string; input_schema: Record<string, unknown> };
+    return {
+      type: "function" as const,
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.input_schema,
+      },
+    };
+  });
+
+  // Convert messages to DeepSeek format (text-only content)
+  const deepSeekMessages: DeepSeekMessage[] = messages.map((m) => {
+    const msg = m as { role: string; content: string };
+    return {
+      role: msg.role as DeepSeekMessage["role"],
+      content: msg.content,
+    };
+  });
+
+  let hasSentText = false;
+  const pendingToolCalls: ToolCall[] = [];
+
+  try {
+    for await (const chunk of streamDeepSeek(deepSeekMessages, deepSeekTools, systemInstructions)) {
+      if (chunk.type === "text" && typeof chunk.data === "string") {
+        sendSSE(controller, encoder, { type: "text", content: chunk.data });
+        hasSentText = true;
+      } else if (chunk.type === "tool_call") {
+        const tc = chunk.data as ToolCall;
+        pendingToolCalls.push(tc);
+      } else if (chunk.type === "done") {
+        // Execute all pending tool calls
+        for (const tool of pendingToolCalls) {
+          const result = await executeTool(tool);
+          if (tool.name === "update_epk") {
+            let patch: Record<string, unknown> = {};
+            try { patch = JSON.parse(result); } catch { /* */ }
+            if (patch.success && patch.patch) {
+              sendSSE(controller, encoder, { type: "epk_update", patch: patch.patch });
+            }
+          } else if (tool.name === "fetch_spotify_data") {
+            sendSSE(controller, encoder, { type: "spotify_data", data: JSON.parse(result) });
+          }
+        }
+      }
+    }
+
+    // If no text was sent at all (edge case), send a fallback
+    if (!hasSentText) {
+      sendSSE(controller, encoder, {
+        type: "text",
+        content: "I processed your request. What would you like to do next?",
+      });
+    }
+  } catch (err) {
+    console.error("DeepSeek streaming error:", err);
+    sendSSE(controller, encoder, {
+      type: "text",
+      content: "I hit a snag processing that. Can you try again?",
+    });
+  } finally {
+    sendSSE(controller, encoder, { type: "status", status: "done" });
+    sendSSE(controller, encoder, { type: "done" });
+    controller.close();
+  }
 }
 
 // ── Anthropic fallback ────────────────────────────────────────────────────────
