@@ -33,7 +33,7 @@ export async function GET(
     await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 2 });
 
     // Load the EPK page, wait for network to be idle
-    await page.goto(epkUrl, { waitUntil: "networkidle0", timeout: 30000 });
+    await page.goto(epkUrl, { waitUntil: "networkidle", timeout: 30000 });
 
     // Wait an extra moment for fonts and animations to settle
     await new Promise((r) => setTimeout(r, 1500));

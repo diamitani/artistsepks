@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 2 });
-    await page.setContent(html, { waitUntil: "networkidle0", timeout: 30000 });
+    await page.setContent(html, { waitUntil: "networkidle", timeout: 30000 });
     await new Promise((r) => setTimeout(r, 1500));
 
     const pdf = await page.pdf({
