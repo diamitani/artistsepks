@@ -63,10 +63,10 @@ export function ArtispreneurFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/analyzer" className="hover:text-[#EDE9E0] transition-colors flex items-center gap-1.5">
-                  <span className="text-[#EDE9E0] font-medium">AI EPK Doctor</span>
-                  <span className="text-[9px] bg-[#C9A227]/20 text-[#C9A227] px-1 rounded">PRO</span>
-                </Link>
+                <a href="/#bio-generator" className="hover:text-[#EDE9E0] transition-colors flex items-center gap-1.5">
+                  <span className="text-[#EDE9E0] font-medium">Free AI Bio Generator</span>
+                  <span className="text-[9px] bg-[#C9A227]/20 text-[#C9A227] px-1 rounded font-bold">FREE</span>
+                </a>
               </li>
               <li>
                 <Link href="/templates" className="hover:text-[#EDE9E0] transition-colors">

@@ -117,8 +117,8 @@ const SOLUTIONS = [
       "Centralized artist data layer unlocking financialization, sync, and ticketing integrations",
       "Backed by the Artispreneur entrepreneurship framework and ecosystem",
     ],
-    cta: "Partner With Us",
-    link: "/analyzer",
+    cta: "Generate Free Bio",
+    link: "/#bio-generator",
     accent: "#A78BFA",
   },
 ];

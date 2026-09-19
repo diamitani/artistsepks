@@ -148,7 +148,7 @@ export default function FeaturesPage() {
               <Link href="/builder">Launch EPK Studio</Link>
             </Button>
             <Button variant="outline" size="lg" asChild className="border-[#333] text-[#EDE9E0]">
-              <Link href="/analyzer">Run AI Pitch Doctor</Link>
+              <a href="/#bio-generator">Free Bio Generator</a>
             </Button>
           </div>
         </div>

@@ -30,6 +30,9 @@ import {
   Sliders,
   Layers,
   Award,
+  Copy,
+  Check,
+  RefreshCw,
 } from "lucide-react";
 
 // ── Hero Interactive EPK Showcase ─────────────────────────────────────────────
@@ -191,6 +194,363 @@ function HeroEPKPreview() {
   );
 }
 
+// ── Free AI Bio Generator Homepage Widget ──────────────────────────────────────
+function HomepageBioGenerator() {
+  const [artistName, setArtistName] = useState("KAYLAN VALE");
+  const [genre, setGenre] = useState("Alternative R&B / Cinematic Soul");
+  const [location, setLocation] = useState("Atlanta, GA");
+  const [influences, setInfluences] = useState("Frank Ocean, SZA, The Weeknd");
+  const [highlights, setHighlights] = useState("3M+ streams on Spotify, featured on Soul Lounge playlist");
+  const [tone, setTone] = useState<"major" | "booking" | "press" | "onesheet">("major");
+
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [generatedResult, setGeneratedResult] = useState<{
+    tagline: string;
+    bio: string;
+    paragraphs: string[];
+  } | null>({
+    tagline: "The Next Signature Voice in Alternative R&B / Cinematic Soul",
+    bio: `With an undeniable sonic identity and commanding commercial momentum, KAYLAN VALE is rapidly ascending as one of the most exciting new forces in Alternative R&B / Cinematic Soul. Operating out of Atlanta, GA, the artist combines world-class songwriting chops with forward-thinking production that demands attention from the first bar.\n\nSynthesizing the foundational essence of Frank Ocean, SZA, The Weeknd into a fresh, contemporary framework, KAYLAN VALE's sound balances mainstream playlist appeal with authentic artistry. Strengthened by milestones including 3M+ streams on Spotify, featured on Soul Lounge playlist, their organic streaming trajectory reflects a deeply engaged, rapidly expanding global audience.\n\nBacked by a relentless work ethic and an undeniable creative vision, KAYLAN VALE is positioned for breakout crossover success across DSP algorithms, global festival stages, and major cultural partnerships.`,
+    paragraphs: [
+      `With an undeniable sonic identity and commanding commercial momentum, KAYLAN VALE is rapidly ascending as one of the most exciting new forces in Alternative R&B / Cinematic Soul. Operating out of Atlanta, GA, the artist combines world-class songwriting chops with forward-thinking production that demands attention from the first bar.`,
+      `Synthesizing the foundational essence of Frank Ocean, SZA, The Weeknd into a fresh, contemporary framework, KAYLAN VALE's sound balances mainstream playlist appeal with authentic artistry. Strengthened by milestones including 3M+ streams on Spotify, featured on Soul Lounge playlist, their organic streaming trajectory reflects a deeply engaged, rapidly expanding global audience.`,
+      `Backed by a relentless work ethic and an undeniable creative vision, KAYLAN VALE is positioned for breakout crossover success across DSP algorithms, global festival stages, and major cultural partnerships.`,
+    ],
+  });
+
+  const handleGenerate = async () => {
+    if (!artistName.trim()) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/bio-generator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          artistName,
+          genre,
+          location,
+          influences,
+          highlights,
+          tone,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setGeneratedResult(data);
+      }
+    } catch (err) {
+      console.error("Failed to generate bio:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopy = () => {
+    if (!generatedResult?.bio) return;
+    navigator.clipboard.writeText(generatedResult.bio);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const sampleProfiles = [
+    {
+      name: "KAYLAN VALE",
+      genre: "Alternative R&B / Cinematic Soul",
+      location: "Atlanta, GA",
+      influences: "Frank Ocean, SZA, The Weeknd",
+      highlights: "3M+ streams on Spotify, featured on Soul Lounge playlist",
+    },
+    {
+      name: "NEON MIRAGE",
+      genre: "Synthwave / Live Electronic",
+      location: "Brooklyn, NY",
+      influences: "Daft Punk, Justice, Tycho",
+      highlights: "Sold out Bowery Ballroom, over 800k monthly Spotify listeners",
+    },
+    {
+      name: "MARLOWE GREY",
+      genre: "Indie Folk / Americana",
+      location: "Nashville, TN",
+      influences: "Phoebe Bridgers, Bon Iver, Gregory Alan Isakov",
+      highlights: "NPR Tiny Desk contest finalist, opened for Lord Huron",
+    },
+  ];
+
+  return (
+    <section id="bio-generator" className="py-20 px-4 sm:px-6 lg:px-8 border-t border-[#1C1C1C] relative scroll-mt-20">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-[#C9A227]/5 blur-[140px] pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto space-y-10 relative z-10">
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#181818] border border-[#C9A227]/30 text-xs font-medium text-[#C9A227]">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>100% Free Music Tool</span>
+          </div>
+
+          <h2 className="font-display text-3xl sm:text-5xl uppercase tracking-wider text-[#EDE9E0]">
+            Free AI Artist <span className="text-[#C9A227]">Bio Generator</span>
+          </h2>
+
+          <p className="text-sm text-[#A0A0A0] max-w-xl mx-auto">
+            Generate press-ready, third-person artist bios in seconds. Tailored for Major Label A&Rs,
+            Festival Promoters, and Music Publicists.
+          </p>
+
+          {/* Quick load sample pills */}
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-2">
+            <span className="text-xs text-[#777] uppercase tracking-wider font-semibold">
+              Try Sample:
+            </span>
+            {sampleProfiles.map((p) => (
+              <button
+                key={p.name}
+                type="button"
+                onClick={() => {
+                  setArtistName(p.name);
+                  setGenre(p.genre);
+                  setLocation(p.location);
+                  setInfluences(p.influences);
+                  setHighlights(p.highlights);
+                }}
+                className="px-2.5 py-1 rounded-md text-xs bg-[#111] hover:bg-[#1A1A1A] border border-[#2A2A2A] hover:border-[#C9A227]/50 text-[#BBB] transition-colors"
+              >
+                {p.name} ({p.genre.split("/")[0].trim()})
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 2-Column Generator Canvas */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Form Controls (5 cols) */}
+          <div className="lg:col-span-5 p-6 rounded-2xl bg-[#0D0D0D] border border-[#222] space-y-5 shadow-xl">
+            <div className="flex items-center justify-between pb-3 border-b border-[#1C1C1C]">
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#C9A227]">
+                1. Artist Details
+              </span>
+              <span className="text-[10px] text-[#777]">AI Pitch Engine</span>
+            </div>
+
+            <div className="space-y-3.5 text-sm">
+              <div>
+                <label className="block text-xs text-[#888] uppercase tracking-wider mb-1 font-medium">
+                  Artist or Band Name
+                </label>
+                <input
+                  type="text"
+                  value={artistName}
+                  onChange={(e) => setArtistName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-[#141414] border border-[#2A2A2A] focus:border-[#C9A227] text-[#EDE9E0] focus:outline-none text-sm"
+                  placeholder="e.g. KAYLAN VALE"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-[#888] uppercase tracking-wider mb-1 font-medium">
+                    Genre / Style
+                  </label>
+                  <input
+                    type="text"
+                    value={genre}
+                    onChange={(e) => setGenre(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg bg-[#141414] border border-[#2A2A2A] focus:border-[#C9A227] text-[#EDE9E0] focus:outline-none text-sm"
+                    placeholder="e.g. Alternative R&B"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-[#888] uppercase tracking-wider mb-1 font-medium">
+                    Location / City
+                  </label>
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg bg-[#141414] border border-[#2A2A2A] focus:border-[#C9A227] text-[#EDE9E0] focus:outline-none text-sm"
+                    placeholder="e.g. Atlanta, GA"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-[#888] uppercase tracking-wider mb-1 font-medium">
+                  Key Influences / Soundalike
+                </label>
+                <input
+                  type="text"
+                  value={influences}
+                  onChange={(e) => setInfluences(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-[#141414] border border-[#2A2A2A] focus:border-[#C9A227] text-[#EDE9E0] focus:outline-none text-sm"
+                  placeholder="e.g. Frank Ocean, SZA, The Weeknd"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-[#888] uppercase tracking-wider mb-1 font-medium">
+                  Story Highlights / Milestones
+                </label>
+                <textarea
+                  rows={2}
+                  value={highlights}
+                  onChange={(e) => setHighlights(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-[#141414] border border-[#2A2A2A] focus:border-[#C9A227] text-[#EDE9E0] focus:outline-none text-sm resize-none"
+                  placeholder="e.g. 3M+ streams, opened for major acts, Spotify playlisting..."
+                />
+              </div>
+
+              {/* Tone Selection Tabs */}
+              <div>
+                <label className="block text-xs text-[#888] uppercase tracking-wider mb-1.5 font-medium">
+                  Select Bio Tone
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[
+                    { id: "major", label: "A&R Major Pitch" },
+                    { id: "booking", label: "Festival / Booking" },
+                    { id: "press", label: "Indie / Press" },
+                    { id: "onesheet", label: "1-Para One-Sheet" },
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setTone(t.id as any)}
+                      className={cn(
+                        "px-2.5 py-1.5 rounded-lg text-xs font-medium border text-center transition-all",
+                        tone === t.id
+                          ? "bg-[#C9A227] text-[#050505] font-bold border-[#C9A227] shadow-sm"
+                          : "bg-[#141414] text-[#AAA] border-[#262626] hover:border-[#444]"
+                      )}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <Button
+                variant="gold"
+                size="lg"
+                onClick={handleGenerate}
+                disabled={loading}
+                className="w-full bg-[#C9A227] hover:bg-[#d8b030] text-[#050505] font-bold tracking-wider uppercase text-xs h-11 shadow-lg shadow-[#C9A227]/20"
+              >
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Generating Bio...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    Generate Press Bio Free
+                  </span>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* Right Output Card (7 cols) */}
+          <div className="lg:col-span-7 space-y-4">
+            <div className="p-6 sm:p-7 rounded-2xl bg-gradient-to-br from-[#121212] to-[#0A0A0A] border border-[#C9A227]/30 shadow-2xl relative space-y-5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-[#222]">
+                <div>
+                  <span className="text-[10px] uppercase tracking-widest text-[#C9A227] font-semibold">
+                    {tone === "major"
+                      ? "Major Label A&R Tone"
+                      : tone === "booking"
+                      ? "Festival Booking Tone"
+                      : tone === "press"
+                      ? "Editorial Press Tone"
+                      : "One-Sheet Executive Hook"}
+                  </span>
+                  <h3 className="font-display text-2xl uppercase tracking-wide text-[#EDE9E0]">
+                    {artistName || "Artist Bio Preview"}
+                  </h3>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopy}
+                    className="border-[#333] hover:border-[#C9A227] text-xs gap-1.5 text-[#DDD]"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-[#22C55E]" />
+                        <span className="text-[#22C55E]">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5 text-[#C9A227]" />
+                        <span>Copy Bio</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Tagline Badge */}
+              {generatedResult?.tagline && (
+                <div className="p-3 rounded-lg bg-[#141414] border border-[#242424] text-xs text-[#C9A227] font-medium flex items-center gap-2">
+                  <span className="text-[10px] uppercase tracking-wider bg-[#C9A227]/20 px-1.5 py-0.5 rounded font-bold">
+                    TAGLINE
+                  </span>
+                  <span>{generatedResult.tagline}</span>
+                </div>
+              )}
+
+              {/* Bio Paragraphs */}
+              <div className="space-y-3.5 text-xs sm:text-sm text-[#CCC] leading-relaxed font-sans min-h-[160px]">
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center py-12 space-y-3 text-center">
+                    <RefreshCw className="w-6 h-6 text-[#C9A227] animate-spin" />
+                    <p className="text-xs text-[#888]">Writing press-ready narrative...</p>
+                  </div>
+                ) : generatedResult ? (
+                  generatedResult.paragraphs.map((p, idx) => (
+                    <p key={idx} className="leading-relaxed">
+                      {p}
+                    </p>
+                  ))
+                ) : (
+                  <p className="text-[#777] italic">
+                    Click &ldquo;Generate Press Bio Free&rdquo; to create your bio.
+                  </p>
+                )}
+              </div>
+
+              {/* Bottom Actions inside output card */}
+              <div className="pt-4 border-t border-[#1F1F1F] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#777]">
+                <span>
+                  {generatedResult?.bio ? `${generatedResult.bio.split(/\s+/).length} words · 3rd-person press ready` : "Ready to generate"}
+                </span>
+
+                {generatedResult?.bio && (
+                  <Button
+                    variant="gold"
+                    size="sm"
+                    asChild
+                    className="bg-[#C9A227] text-[#050505] font-bold uppercase tracking-wider text-xs shadow-md"
+                  >
+                    <Link
+                      href={`/builder?artist=${encodeURIComponent(artistName)}&genre=${encodeURIComponent(genre)}&bio=${encodeURIComponent(generatedResult.bio)}`}
+                    >
+                      <span>Build EPK With This Bio</span>
+                      <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Persona Switcher Section ──────────────────────────────────────────────────
 function PersonaSection() {
   const [activePersona, setActivePersona] = useState<number>(0);
@@ -238,8 +598,8 @@ function PersonaSection() {
       title: "Venture-Scale Creator Economy Platform",
       desc: "Powered by a viral product-led growth (PLG) loop: every public artist EPK footer drives organic inbound customer acquisition across global music hubs.",
       bullets: ["Defensible Artist Data Layer", "Low CAC via Public Watermarks", "Artispreneur Business Framework"],
-      cta: "Run Industry Analyzer",
-      link: "/analyzer",
+      cta: "Generate Free Bio",
+      link: "/#bio-generator",
     },
   ];
 
@@ -446,10 +806,10 @@ export default function HomePage() {
               asChild
               className="border-[#C9A227]/30 text-[#EDE9E0] hover:border-[#C9A227] hover:bg-[#C9A227]/10 h-12 px-8"
             >
-              <Link href="/analyzer" className="flex items-center gap-2">
+              <a href="#bio-generator" className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-[#C9A227]" />
-                <span>AI EPK Doctor Audit</span>
-              </Link>
+                <span>Free Bio Generator</span>
+              </a>
             </Button>
           </div>
 
@@ -458,37 +818,11 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Free AI Bio Generator Homepage Section */}
+      <HomepageBioGenerator />
+
       {/* Stakeholder Persona Section */}
       <PersonaSection />
-
-      {/* AI EPK Doctor Teaser Banner */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 border-t border-[#1C1C1C] bg-gradient-to-b from-[#080808] to-[#050505]">
-        <div className="max-w-5xl mx-auto rounded-3xl bg-gradient-to-r from-[#141414] via-[#0E0E0E] to-[#141414] border border-[#C9A227]/30 p-8 sm:p-12 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="space-y-3 text-left">
-            <Badge className="bg-[#C9A227]/20 text-[#C9A227] border-[#C9A227]/30 uppercase text-[10px] tracking-wider">
-              Exclusive AI Tool
-            </Badge>
-            <h3 className="font-display text-3xl sm:text-4xl uppercase tracking-wide text-[#EDE9E0]">
-              Audit Your EPK Through 6 Industry Lenses
-            </h3>
-            <p className="text-xs sm:text-sm text-[#999] max-w-lg">
-              Simulate A&R signing thresholds, promoter booking viability, sync licensing clearance, and press kit completeness with our multi-persona analysis agent.
-            </p>
-          </div>
-
-          <Button
-            variant="gold"
-            size="lg"
-            asChild
-            className="bg-[#C9A227] text-[#050505] font-bold uppercase tracking-wider text-xs whitespace-nowrap h-12 px-6"
-          >
-            <Link href="/analyzer" className="flex items-center gap-2">
-              <span>Run Free EPK Audit</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </Button>
-        </div>
-      </section>
 
       {/* Comparison Matrix */}
       <ComparisonSection />

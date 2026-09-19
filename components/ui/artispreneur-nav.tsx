@@ -34,7 +34,7 @@ export function ArtispreneurNav() {
   }, []);
 
   const navLinks = [
-    { label: "AI Analyzer", href: "/analyzer", badge: "New" },
+    { label: "Bio Generator", href: "/#bio-generator", badge: "Free" },
     { label: "Templates", href: "/templates" },
     { label: "Features", href: "/features" },
     { label: "Solutions", href: "/solutions" },
@@ -124,10 +124,10 @@ export function ArtispreneurNav() {
               asChild
               className="border-[#C9A227]/30 text-[#EDE9E0] hover:border-[#C9A227] hover:bg-[#C9A227]/10"
             >
-              <Link href="/analyzer" className="flex items-center gap-1.5">
+              <a href="/#bio-generator" className="flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-[#C9A227]" />
-                <span>EPK Doctor</span>
-              </Link>
+                <span>Free Bio Generator</span>
+              </a>
             </Button>
             <Button
               variant="gold"
