@@ -1,4 +1,4 @@
-export type EPKTemplate = "main" | "booking" | "brand";
+export type EPKTemplate = "main" | "booking" | "brand" | "one-sheet" | "media";
 
 export interface SocialLinks {
   instagram?: string;
@@ -7,10 +7,12 @@ export interface SocialLinks {
   youtube?: string;
   spotify?: string;
   appleMusic?: string;
-  facebook?: string;
-  website?: string;
-  bandcamp?: string;
   soundcloud?: string;
+  pandora?: string;
+  facebook?: string;
+  suno?: string;
+  bandcamp?: string;
+  website?: string;
 }
 
 export interface Stats {
@@ -18,17 +20,36 @@ export interface Stats {
   youtubeSubscribers?: string;
   youtubeViews?: string;
   tiktokViews?: string;
+  tiktokFollowers?: string;
   instagramFollowers?: string;
+  soundcloudFollowers?: string;
+  engagementScore?: number;
+  engagementGrade?: string;
+  totalStreams?: string;
+  monthlyGrowth?: string;
 }
 
 export interface Release {
+  id?: string;
   title: string;
-  type: "Album" | "EP" | "Single" | "Mixtape";
+  type: "Album" | "EP" | "Single" | "Mixtape" | "Remix";
   year: string;
+  releaseDate?: string;
   tracks?: number;
   certification?: string;
   coverUrl?: string;
   streamingUrl?: string;
+  spotifyUrl?: string;
+  appleMusicUrl?: string;
+  soundcloudUrl?: string;
+  youtubeUrl?: string;
+  bpm?: number;
+  key?: string;
+  genre?: string;
+  isrc?: string;
+  upc?: string;
+  role?: string;
+  streams?: string;
 }
 
 export interface TimelineEvent {
@@ -41,6 +62,8 @@ export interface PressQuote {
   quote: string;
   publication: string;
   url?: string;
+  date?: string;
+  author?: string;
 }
 
 export interface PerformancePackage {
@@ -48,6 +71,71 @@ export interface PerformancePackage {
   capacity: string;
   setLength: string;
   features: string[];
+  priceRange?: string;
+}
+
+export interface RiderItem {
+  id: string;
+  category: "audio" | "lighting" | "stage" | "hospitality" | "security" | "catering";
+  name: string;
+  specification: string;
+  quantity?: number;
+  notes?: string;
+}
+
+export interface TechnicalRider {
+  channelCount?: number;
+  monitorMixes?: number;
+  stageDimensions?: string;
+  paRequirements?: string;
+  microphones?: string[];
+  diBoxes?: number;
+  backlineProvided?: string[];
+  backlineRequired?: string[];
+  items?: RiderItem[];
+  notes?: string;
+}
+
+export interface PerformanceRider {
+  greenRoomReqs?: string[];
+  hospitalityReqs?: string[];
+  cateringNotes?: string;
+  hotelReqs?: string;
+  groundTransportReqs?: string;
+  guestPassAllotment?: number;
+  securityReqs?: string[];
+  items?: RiderItem[];
+  notes?: string;
+}
+
+export interface ThemeAnalysis {
+  sonicStyle?: string;
+  thematicMotifs?: string[];
+  atmosphericProfile?: string;
+  vocalDelivery?: string;
+  instrumentalHighlights?: string[];
+  genreFusion?: string;
+  brandIdentityNarrative?: string;
+}
+
+export interface BrandAsset {
+  id: string;
+  title: string;
+  type: "photo" | "logo" | "cover" | "press-kit" | "vector" | "stem";
+  url: string;
+  dimensions?: string;
+  dpi?: number;
+  fileSize?: string;
+}
+
+export interface ServiceRate {
+  id: string;
+  title: string;
+  category: "Live Performance" | "Feature / Verse" | "Production" | "Mixing / Mastering" | "Brand Endorsement" | "DJ Set";
+  rate: string;
+  unit: "per show" | "per track" | "per post" | "per hour" | "flat rate";
+  description: string;
+  turnaround?: string;
 }
 
 export interface EPKData {
@@ -58,35 +146,69 @@ export interface EPKData {
   artistName: string;
   artistTagline?: string;
   genre?: string;
+  additionalGenres?: string[];
+  artistTypes?: string[];
+  dateOfBirth?: string;
+  birthCity?: string;
+  currentCity?: string;
   hometown?: string;
-  // Content
+  yearStarted?: string;
+  pro?: string; // ASCAP, BMI, SESAC, etc.
+  
+  // Narrative & Bios
   bio: string;
   shortBio?: string;
-  // Media
+  longBio?: string;
+  influences?: string[];
+  themeAnalysis?: ThemeAnalysis;
+  brandStatement?: string;
+  
+  // Media & Assets
   heroImageUrl?: string;
   profileImageUrl?: string;
   youtubeVideoId?: string;
   spotifyArtistId?: string;
-  // Stats
+  pressPhotos?: BrandAsset[];
+  mediaFiles?: BrandAsset[];
+  
+  // Stats & Analysis
   stats: Stats;
-  // Releases
+  engagementScore?: number;
+  engagementGrade?: string;
+  
+  // Catalog & Shows
   releases: Release[];
-  // Timeline
+  discography?: Release[];
   timeline: TimelineEvent[];
-  // Press
+  performances?: TimelineEvent[];
+  notableShows?: string[];
+  
+  // Press & Collaborations
   pressQuotes: PressQuote[];
-  // Collaborators
+  pressLinks?: { title: string; url: string; outlet: string; summary?: string }[];
   collaborators?: string[];
-  // Brand partners
   brandPartners?: string[];
-  // Social
+  
+  // Riders & Booking Logistics
+  technicalRider?: TechnicalRider;
+  performanceRider?: PerformanceRider;
+  performancePackages?: PerformancePackage[];
+  services?: ServiceRate[];
+  
+  // Contacts & Rep
   socialLinks: SocialLinks;
-  // Booking
   bookingEmail?: string;
   bookingPhone?: string;
-  performancePackages?: PerformancePackage[];
-  // Theme
+  website?: string;
+  managerName?: string;
+  managerContact?: string;
+  labelName?: string;
+  labelContact?: string;
+  
+  // Design system tokens
   accentColor?: string;
+  designTokens?: Record<string, unknown>;
+  
   // Meta
   createdAt?: string;
   updatedAt?: string;
@@ -122,16 +244,26 @@ export interface ContactInfo {
 export interface ArtistBackground {
   artistName: string;
   stageName: string;
+  dateOfBirth?: string;
+  birthCity?: string;
+  currentCity?: string;
   location: string;
   hometown: string;
   yearsInBusiness: number;
+  yearStarted?: string;
   isProfessional: boolean;
   genre: string;
+  genreAdditional?: string[];
+  artistTypes?: string[]; // Vocalist/Singer, Producer, Engineer, Emcee/Rapper, Songwriter, Instrumentalist, Comedian, etc.
   style: string;
   themes: string[];
+  musicThemeStyle?: string;
   energy: string;
   influences: string[];
+  artistIdentityBrand?: string;
   bio: string;
+  shortBio?: string;
+  longBio?: string;
 }
 
 export interface ArtistGoals {
@@ -149,7 +281,7 @@ export interface ArtistGoals {
 
 export interface ArtistAssets {
   hasPro: boolean;
-  proOrganization: string;
+  proOrganization: string; // ASCAP, BMI, SESAC, SOCAN, PRS
   hasCopyrights: boolean;
   copyrightDetails: string;
   dsps: string[];
@@ -160,6 +292,11 @@ export interface ArtistAssets {
   hasBankAccount: boolean;
   studioAccess: string;
   needsHelp: string[];
+  technicalRiderNotes?: string;
+  performanceRiderNotes?: string;
+  pressLinks?: string[];
+  collaborationNotes?: string;
+  performanceNotes?: string;
 }
 
 export interface ArtistResources {
@@ -171,9 +308,12 @@ export interface ArtistResources {
 
 export interface EngagementScore {
   overall: number;
+  grade?: string;
   instagram?: { followers: number; avgLikes: number; avgComments: number; rate: number };
   tiktok?: { followers: number; avgLikes: number; avgViews: number; rate: number };
   youtube?: { subscribers: number; avgViews: number; rate: number };
+  spotify?: { monthlyListeners: number; popularity: number };
+  soundcloud?: { followers: number; tracks: number };
   twitter?: { followers: number; engagement: number };
 }
 
@@ -198,11 +338,16 @@ export interface ArtistProfile {
     socialMedia: Record<string, unknown>;
     engagementScore?: EngagementScore;
     discography: Release[];
+    themeAnalysis?: ThemeAnalysis;
+    pressSummaries?: { title: string; publication: string; quote: string; url?: string }[];
   };
 
-  // Media
+  // Media & Vault
   files: string[];
+  brandAssets?: BrandAsset[];
   collaborations: string[];
+  performances?: TimelineEvent[];
+  services?: ServiceRate[];
 
   // Linked EPK
   epkSlug?: string;
@@ -222,9 +367,10 @@ export const EMPTY_PROFILE: ArtistProfile = {
     managerName: "", managerContact: "", label: "", labelContact: "",
   },
   background: {
-    artistName: "", stageName: "", location: "", hometown: "",
-    yearsInBusiness: 0, isProfessional: false, genre: "", style: "",
-    themes: [], energy: "", influences: [], bio: "",
+    artistName: "", stageName: "", dateOfBirth: "", birthCity: "", currentCity: "", location: "", hometown: "",
+    yearsInBusiness: 0, yearStarted: "", isProfessional: false, genre: "", genreAdditional: [],
+    artistTypes: [], style: "", themes: [], musicThemeStyle: "", energy: "", influences: [],
+    artistIdentityBrand: "", bio: "", shortBio: "", longBio: "",
   },
   goals: {
     primaryGoal: "", performanceFrequency: "", streamingTarget: "",
@@ -236,12 +382,76 @@ export const EMPTY_PROFILE: ArtistProfile = {
     hasPro: false, proOrganization: "", hasCopyrights: false, copyrightDetails: "",
     dsps: [], hasSplitSheets: false, hasContracts: false, businessEntity: "",
     hasEin: false, hasBankAccount: false, studioAccess: "", needsHelp: [],
+    technicalRiderNotes: "", performanceRiderNotes: "", pressLinks: [], collaborationNotes: "", performanceNotes: "",
   },
   resources: {
     investmentBudget: "", timeCommitment: "", availability: "", teamMembers: [],
   },
   enriched: { socialMedia: {}, discography: [] },
   files: [],
+  brandAssets: [],
   collaborations: [],
+  performances: [],
+  services: [],
   intakePhase: 0,
 };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PLATFORM ECOSYSTEM TYPES (Directory, CRM, Inbox, Knowledge)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface DirectoryListing {
+  id: string;
+  category: "venues" | "brands" | "radio" | "blogs" | "playlists" | "artists";
+  name: string;
+  subtitle: string;
+  location: string;
+  genreFocus: string[];
+  contactEmail?: string;
+  website?: string;
+  capacityOrReach?: string;
+  verified: boolean;
+  avatarUrl?: string;
+  description: string;
+  submissionGuidelines?: string;
+  acceptingSubmissions: boolean;
+}
+
+export interface CampaignSubmission {
+  id: string;
+  title: string;
+  targetName: string;
+  targetCategory: "Venue" | "Brand" | "Label" | "Blog" | "Radio" | "Playlist";
+  contactEmail: string;
+  status: "Draft" | "Sent" | "Opened" | "In Review" | "Booked" | "Declined";
+  epkSlug: string;
+  sentAt?: string;
+  updatedAt: string;
+  notes?: string;
+  pitchSubject: string;
+  pitchBody: string;
+}
+
+export interface InboxMessage {
+  id: string;
+  senderName: string;
+  senderRole: string;
+  senderAvatar?: string;
+  subject: string;
+  preview: string;
+  content: string;
+  date: string;
+  unread: boolean;
+  category: "booking" | "brand" | "collab" | "press" | "general";
+  replyCount?: number;
+}
+
+export interface KnowledgeFile {
+  id: string;
+  name: string;
+  type: "lyrics" | "press-release" | "liner-notes" | "interview" | "bio-draft" | "tech-spec" | "other";
+  size: string;
+  uploadedAt: string;
+  content?: string;
+  summary?: string;
+}

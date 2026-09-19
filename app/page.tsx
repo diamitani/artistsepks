@@ -115,7 +115,7 @@ function WhatIsAnEPKSection() {
                 asChild
                 className="bg-[#C9A227] hover:bg-[#d8b030] text-[#050505] font-bold uppercase text-xs tracking-wider h-11 px-6 rounded-xl shadow-lg shadow-[#C9A227]/20"
               >
-                <Link href="/builder" className="flex items-center gap-2">
+                <Link href="/auth/signup?redirectTo=/builder" className="flex items-center gap-2">
                   <span>Create Your Free EPK</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
@@ -1481,7 +1481,7 @@ export default function HomePage() {
               asChild
               className="bg-[#C9A227] text-[#050505] font-bold uppercase text-xs h-12 px-8 shadow-xl shadow-[#C9A227]/20"
             >
-              <Link href="/builder">Launch EPK Studio Free</Link>
+              <Link href="/auth/signup?redirectTo=/builder">Launch EPK Studio Free</Link>
             </Button>
             <Button
               variant="outline"

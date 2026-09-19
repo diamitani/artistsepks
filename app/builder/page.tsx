@@ -15,12 +15,15 @@ import {
 import { MainTemplate } from "@/components/templates/MainTemplate";
 import { BookingTemplate } from "@/components/templates/BookingTemplate";
 import { BrandTemplate } from "@/components/templates/BrandTemplate";
+import { OneSheetTemplate } from "@/components/templates/OneSheetTemplate";
+import { MediaTemplate } from "@/components/templates/MediaTemplate";
 import { QUICK_ACTIONS } from "@/lib/agent";
 import type { EPKData, EPKTemplate, ArtistProfile } from "@/lib/types";
 import type { ChatMessage, SSEEvent } from "@/lib/agent";
 import { PdfDownload } from "@/components/ui/pdf-download";
 import { ExampleBrowser } from "@/components/examples/browser";
 import { DeployMenu } from "@/components/ui/deploy-menu";
+import { AuthGateModal } from "@/components/ui/auth-gate-modal";
 import {
   Music2,
   Sparkles,
@@ -74,18 +77,20 @@ function TemplatePill({
   onClick: () => void;
 }) {
   const config: Record<EPKTemplate, { label: string; color: string }> = {
-    main: { label: "Main EPK", color: "#C9A227" },
+    "one-sheet": { label: "One-Sheet", color: "#C9A227" },
+    main: { label: "General EPK", color: "#C9A227" },
     booking: { label: "Booking", color: "#C8102E" },
-    brand: { label: "Brand", color: "#C9A227" },
+    media: { label: "Media / Press", color: "#EDE9E0" },
+    brand: { label: "Brand", color: "#3B82F6" },
   };
 
-  const t = config[template];
+  const t = config[template] || config.main;
 
   return (
     <button
       onClick={onClick}
       className={cn(
-        "px-3 py-1.5 rounded-full text-[11px] font-medium tracking-wider uppercase transition-all",
+        "px-3 py-1.5 rounded-full text-[11px] font-medium tracking-wider uppercase transition-all whitespace-nowrap",
         active
           ? "text-[#050505] font-semibold shadow-md"
           : "text-[#888] border border-[#333] hover:border-[#555]"
@@ -182,6 +187,7 @@ export default function BuilderPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [showExamples, setShowExamples] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [user, setUser] = useState<any>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -519,6 +525,12 @@ export default function BuilderPage() {
   // ── Publish EPK ─────────────────────────────────────────────────────────────
   const handlePublish = async () => {
     if (!epk.artistName) return;
+
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
     setSaving(true);
     setSaveError("");
 
@@ -580,8 +592,8 @@ export default function BuilderPage() {
           <div className="h-4 w-px bg-[#333] mx-1" />
 
           {/* Template switcher */}
-          <div className="flex items-center gap-1.5">
-            {(["main", "booking", "brand"] as EPKTemplate[]).map((t) => (
+          <div className="flex items-center gap-1.5 overflow-x-auto">
+            {(["one-sheet", "main", "booking", "media", "brand"] as EPKTemplate[]).map((t) => (
               <TemplatePill
                 key={t}
                 template={t}
@@ -635,10 +647,10 @@ export default function BuilderPage() {
           )}
 
           {/* Pre-publish PDF download */}
-          {hasContent && <PdfDownload data={epk} />}
+          {hasContent && <PdfDownload data={epk} user={user} />}
 
           {/* Deploy menu */}
-          {hasContent && <DeployMenu data={epk} slug={publishedSlug} />}
+          {hasContent && <DeployMenu data={epk} slug={publishedSlug} user={user} />}
 
           {hasContent && !publishedSlug && (
             <Button
@@ -862,6 +874,10 @@ export default function BuilderPage() {
                       <BookingTemplate data={epk} preview />
                     ) : epk.template === "brand" ? (
                       <BrandTemplate data={epk} preview />
+                    ) : epk.template === "one-sheet" ? (
+                      <OneSheetTemplate data={epk} />
+                    ) : epk.template === "media" ? (
+                      <MediaTemplate data={epk} />
                     ) : (
                       <MainTemplate data={epk} preview />
                     )}
@@ -899,6 +915,14 @@ export default function BuilderPage() {
           )}
         </main>
       </div>
+
+      <AuthGateModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        title="Sign Up to Save & Publish Your EPK"
+        subtitle="Create your free artist account with Google, Spotify, or Apple to save this press kit to your dashboard and host your live link."
+        redirectTo="/builder"
+      />
     </div>
   );
 }

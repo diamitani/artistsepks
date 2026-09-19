@@ -36,7 +36,7 @@ const TIERS = [
       "View-only public profile",
     ],
     cta: "Build Free EPK",
-    href: "/builder",
+    href: "/auth/signup?redirectTo=/builder",
     buttonVariant: "outline" as const,
   },
   {
