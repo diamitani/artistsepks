@@ -486,74 +486,153 @@ async function* streamDeepSeekProvider(
   }
 }
 
+// ── Known genres (must match wizard.tsx) ──────────────────────────────────────
+
+const KNOWN_GENRES: Record<string, string[]> = {
+  "Hip-Hop / Rap": ["hip-hop", "hip hop", "rap", "hiphop", "trap", "boom bap"],
+  "R&B / Soul": ["r&b", "rnb", "r and b", "soul", "neo-soul", "neo soul"],
+  "Electronic / EDM": ["electronic", "edm", "house", "techno", "dubstep", "drum and bass", "dnb", "trance"],
+  "Pop": ["pop"],
+  "Alternative / Indie Pop": ["indie", "indie pop", "alternative", "alt"],
+  "Rock / Metal": ["rock", "metal", "punk", "grunge", "hard rock", "hardcore"],
+  "Acoustic / Folk": ["folk", "acoustic", "singer-songwriter", "singer songwriter"],
+  "Country / Americana": ["country", "americana", "bluegrass"],
+  "Latin / Reggaeton": ["latin", "reggaeton", "bachata", "salsa", "dembow"],
+  "Afrobeats / World": ["afrobeats", "afro", "world", "dancehall", "reggae", "soca"],
+  "Jazz / Classical": ["jazz", "classical", "orchestral", "big band", "bebop"],
+  "Ambient / Cinematic": ["ambient", "cinematic", "lo-fi", "lofi", "chillwave", "new age"],
+};
+
+function matchGenre(text: string): string | null {
+  const lower = text.toLowerCase();
+  for (const [genre, keywords] of Object.entries(KNOWN_GENRES)) {
+    for (const kw of keywords) {
+      // Match the keyword as a whole word (not embedded in "professional" etc.)
+      const regex = new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+      if (regex.test(lower)) return genre;
+    }
+  }
+  return null;
+}
+
+// ── Intent detection ──────────────────────────────────────────────────────────
+
+const INTENT_PATTERNS = [
+  /\b(build|create|make|start|generate|need)\b.*\b(epk|press kit|booking kit|brand kit|one.?sheet)\b/i,
+  /\b(i'd like|i want|i need|let's|help me)\b/i,
+  /\b(get started|begin|new epk)\b/i,
+];
+
+function isIntentStatement(text: string): boolean {
+  return INTENT_PATTERNS.some((p) => p.test(text));
+}
+
+// ── Phased fallback — the "offline assistant" ─────────────────────────────────
+
 async function* streamIntelligentFallback(
   messages: { role: string; content: string }[],
   epkData?: any
 ): AsyncGenerator<{ type: string; data: unknown }> {
   const lastUserMsg = messages.filter((m) => m.role === "user").pop()?.content || "";
-  const text = lastUserMsg.trim();
+  // Strip the injected context suffix before processing
+  const text = lastUserMsg.replace(/\[EPK progress:[\s\S]*$/, "").replace(/\[REMEMBER:[\s\S]*$/, "").trim();
   const lower = text.toLowerCase();
 
   const patch: Record<string, any> = {};
   let reply = "";
 
-  // 1. Check if user is providing artist name
-  if (!epkData?.artistName || lower.startsWith("my name is") || lower.startsWith("i'm ") || lower.startsWith("im ")) {
-    const extractedName = text.replace(/^(my name is|i'm|im|call me|artist name is)\s+/i, "").split(/[.,\n]/)[0].trim();
-    if (extractedName && extractedName.length < 50) {
-      patch.artistName = extractedName;
-      reply = `Nice to meet you, **${extractedName}**! I've initialized your Electronic Press Kit header.\n\nWhat genre of music do you make?`;
+  // ── Phase 0: Intent / greeting — never write data ──────────────────────────
+  if (isIntentStatement(text) || lower.match(/^(hi|hello|hey|yo|sup|what's up|good morning|good evening)/)) {
+    const name = epkData?.artistName;
+    if (name) {
+      reply = `Welcome back, ${name}! Let's keep building your press kit. What would you like to work on — bio, music links, social media, or template selection?`;
+    } else {
+      reply = `Welcome to the EPK Studio! I'm here to build your professional press kit. Let's start with the basics.\n\nWhat's your artist or stage name?`;
     }
   }
 
-  // 2. Check if user is providing genre
-  if (!reply && (lower.includes("genre") || lower.includes("pop") || lower.includes("hip-hop") || lower.includes("rap") || lower.includes("r&b") || lower.includes("rock") || lower.includes("electronic") || lower.includes("indie") || lower.includes("folk") || lower.includes("soul") || lower.includes("metal") || lower.includes("country") || lower.includes("jazz") || lower.includes("edm"))) {
-    let genre = "Alternative Pop";
-    if (lower.includes("hip-hop") || lower.includes("rap")) genre = "Hip-Hop / Rap";
-    else if (lower.includes("r&b") || lower.includes("soul")) genre = "R&B / Soul";
-    else if (lower.includes("electronic") || lower.includes("edm") || lower.includes("house")) genre = "Electronic / EDM";
-    else if (lower.includes("rock") || lower.includes("indie")) genre = "Indie Rock";
-    else if (lower.includes("country") || lower.includes("folk")) genre = "Folk / Americana";
-    else if (lower.includes("jazz")) genre = "Jazz Fusion";
-    else if (lower.includes("pop")) genre = "Contemporary Pop";
-    else genre = text.slice(0, 35);
-
-    patch.genre = genre;
-    const name = epkData?.artistName || "Artist";
-    patch.artistTagline = `${genre} Pioneer · Producer & Performer`;
-    patch.bio = `${name} is an acclaimed ${genre} visionary blending atmospheric sound design with infectious songwriting and high-impact live performances.`;
-    patch.shortBio = `${name} is a ${genre} recording artist with over 13M+ global streams and verified live festival draw.`;
-
-    reply = `Got it! I've set your primary genre to **${genre}** and crafted your initial bio narrative.\n\nWhere are you currently based, or what city is your hometown?`;
+  // ── Phase 1: Artist name ───────────────────────────────────────────────────
+  if (!reply && !epkData?.artistName) {
+    // Only extract a name if the input looks like a name (short, no URLs, no questions)
+    const cleaned = text.replace(/^(my name is|i'm|im|call me|artist name is|i go by|they call me)\s+/i, "").split(/[.,\n?!]/)[0].trim();
+    if (cleaned && cleaned.length < 50 && cleaned.length > 0 && !cleaned.includes("http") && !cleaned.includes("?")) {
+      patch.artistName = cleaned;
+      reply = `Great to meet you, ${cleaned}! I've set your artist name.\n\nWhat genre of music do you make? For example: Hip-Hop, R&B, Pop, Rock, Electronic, Country, Jazz, or something else?`;
+    } else {
+      reply = `Let's get started! What's your artist or stage name?`;
+    }
   }
 
-  // 3. Check for location / city
-  if (!reply && (lower.includes("based in") || lower.includes("from ") || lower.includes("city") || lower.includes("la") || lower.includes("new york") || lower.includes("atlanta") || lower.includes("london") || lower.includes("nashville") || lower.includes("chicago") || lower.includes("toronto") || lower.includes("california") || lower.includes("texas"))) {
-    const loc = text.replace(/^(i'm based in|based in|from|i live in)\s+/i, "").trim();
-    patch.hometown = loc;
-    patch.currentCity = loc;
-    reply = `Awesome! I've updated your location to **${loc}**.\n\nWho are your biggest musical influences or inspirations?`;
+  // ── Phase 2: Genre (strict enum matching) ──────────────────────────────────
+  if (!reply && epkData?.artistName && !epkData?.genre) {
+    const detectedGenre = matchGenre(text);
+    if (detectedGenre) {
+      patch.genre = detectedGenre;
+      const name = epkData.artistName;
+      reply = `I've set your genre to **${detectedGenre}**.\n\nWhere are you currently based, or what city is your hometown?`;
+    } else {
+      // Don't guess — ask again with options
+      reply = `I didn't catch a specific genre from that. Which of these fits best?\n\nHip-Hop / Rap, R&B / Soul, Pop, Rock, Electronic / EDM, Country, Folk, Jazz, Latin, Afrobeats, Ambient, or Indie?\n\nYou can also tell me a more specific sub-genre.`;
+    }
   }
 
-  // 4. Check for influences / theme
+  // ── Phase 3: Location ──────────────────────────────────────────────────────
+  if (!reply && epkData?.artistName && epkData?.genre && !epkData?.hometown) {
+    const locMatch = text.match(/^(?:i'm based in|based in|from|i live in|i'm from|located in)?\s*(.+)/i);
+    const loc = locMatch ? locMatch[1].trim() : text.trim();
+    if (loc && loc.length < 80 && loc.length > 1 && !loc.includes("http")) {
+      patch.hometown = loc;
+      reply = `Got it — **${loc}**! I've updated your location.\n\nWhat type of artist are you? For example: vocalist, producer, rapper, songwriter, DJ, instrumentalist, or multiple?`;
+    } else {
+      reply = `Where are you based? City and state (or country) works great.`;
+    }
+  }
+
+  // ── Phase 4: Influences ────────────────────────────────────────────────────
   if (!reply && (lower.includes("influence") || lower.includes("inspired by") || lower.includes("sounds like"))) {
-    const influences = text.replace(/^(my influences are|inspired by|sounds like)\s+/i, "").split(/[,and]+/).map((s) => s.trim()).filter(Boolean);
-    patch.influences = influences;
-    reply = `Great taste! I've incorporated **${influences.join(", ")}** into your music theme analysis.\n\nDo you have a booking email or management contact we should publish on your EPK?`;
+    const influences = text.replace(/^(my influences are|influenced by|inspired by|sounds like|i listen to)\s*/i, "")
+      .split(/[,&]+|\band\b/i).map((s) => s.trim()).filter((s) => s.length > 0 && s.length < 60);
+    if (influences.length > 0) {
+      patch.influences = influences;
+      reply = `Great influences — **${influences.join(", ")}**! I've added these to your artist profile.\n\nDo you have a Spotify artist link or any music links I should pull data from?`;
+    }
   }
 
-  // 5. Check for email
-  if (!reply && (lower.includes("@") || lower.includes(".com"))) {
+  // ── Phase 5: Email detection ───────────────────────────────────────────────
+  if (!reply && text.includes("@")) {
     const emailMatch = text.match(/[\w.-]+@[\w.-]+\.\w+/);
     if (emailMatch) {
       patch.bookingEmail = emailMatch[0];
-      reply = `I've set your official booking email to **${emailMatch[0]}**.\n\nYour press kit is looking fantastic! Would you like to add Spotify tracks, technical riders, or switch to the Booking, Media, or One-Sheeter template?`;
+      reply = `I've set your booking contact to **${emailMatch[0]}**.\n\nWould you like to choose a template? Options are: Main EPK, Booking Kit, Brand Kit, One-Sheet, or Media/Press.`;
     }
   }
 
-  // Default conversational response
+  // ── Phase 6: URL / link detection ──────────────────────────────────────────
+  if (!reply && text.match(/https?:\/\//)) {
+    // Don't process links in the fallback — tell the user we need AI for that
+    reply = `I see you've shared a link! Unfortunately I'm running in offline mode right now and can't scan URLs. Please try again in a moment, or you can enter your information manually.\n\nWhat would you like to update on your EPK?`;
+  }
+
+  // ── Default: context-aware prompt ──────────────────────────────────────────
   if (!reply) {
-    reply = `I've updated your press kit with your latest notes!\n\nWhat genre of music do you make, or do you have a Spotify/YouTube link we should scan?`;
+    const name = epkData?.artistName;
+    const genre = epkData?.genre;
+    const hasStats = epkData?.stats && Object.keys(epkData.stats).length > 0;
+    const hasBio = epkData?.bio && epkData.bio.length > 50;
+
+    if (!name) {
+      reply = `Let's build your press kit! What's your artist or stage name?`;
+    } else if (!genre) {
+      reply = `Thanks, ${name}! What genre of music do you make? For example: Hip-Hop, R&B, Pop, Rock, Electronic, Country, Jazz, or Indie?`;
+    } else if (!epkData?.hometown) {
+      reply = `Where are you based, ${name}? City and state works great.`;
+    } else if (!hasBio) {
+      reply = `Tell me about your journey as an artist — how did you get started, what drives your music, and what makes you unique? I'll use this to write a professional press bio for you.`;
+    } else if (!hasStats) {
+      reply = `Do you have any social media or streaming links? I can pull your follower counts and streaming stats automatically from Spotify, Instagram, YouTube, or TikTok.`;
+    } else {
+      reply = `Your EPK is coming together nicely, ${name}! What would you like to work on next — adding press quotes, career milestones, performance packages, or adjusting the design?`;
+    }
   }
 
   // Yield patch if any fields updated
