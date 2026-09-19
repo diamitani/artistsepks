@@ -33,164 +33,692 @@ import {
   Copy,
   Check,
   RefreshCw,
+  Tv,
 } from "lucide-react";
 
-// ── Hero Interactive EPK Showcase ─────────────────────────────────────────────
-function HeroEPKPreview() {
-  const [activeTab, setActiveTab] = useState<"main" | "booking" | "brand">("main");
-
-  const previewData = {
-    main: {
-      artist: "KAYLAN VALE",
-      tagline: "Atmospheric Alternative R&B / Cinematic Soul",
-      genre: "Atlanta, GA · 68.4K Monthly Listeners",
-      bio: "Fusing moody vintage synthesizers with modern 808 percussion, Kaylan Vale commands festival stages and streaming algorithms alike.",
-      stat1: "3.2M+",
-      stat1Label: "Global Streams",
-      stat2: "+44%",
-      stat2Label: "MoM Growth",
-      badge: "Major Label A&R Priority",
-      accent: "#C9A227",
-    },
-    booking: {
-      artist: "KAYLAN VALE (LIVE BAND)",
-      tagline: "Festival & Tour Booking Kit 2026-2027",
-      genre: "4-Piece Live Setup · 24 Channel Input List",
-      bio: "High-energy festival performance with live drumming, analog synthesizers, and dedicated lighting cues. Zero backline hassle.",
-      stat1: "950",
-      stat1Label: "Avg Room Cap",
-      stat2: "100%",
-      stat2Label: "Sellout Rate",
-      badge: "Promoter & Festival Magnet",
-      accent: "#C0272D",
-    },
-    brand: {
-      artist: "KAYLAN VALE x BRANDS",
-      tagline: "Cultural Influence & Demographic Portfolio",
-      genre: "72% Gen-Z / Millennial · 6.8% Engagement Rate",
-      bio: "Delivering bespoke cultural activations for premier streetwear, audio gear, and lifestyle partners. Direct high-intent audience.",
-      stat1: "6.8%",
-      stat1Label: "IG Engagement",
-      stat2: "120K+",
-      stat2Label: "TikTok Reach",
-      badge: "Brand Sponsorship Ready",
-      accent: "#38BDF8",
-    },
-  };
-
-  const current = previewData[activeTab];
+// ── SECTION 1: What is an EPK? (Dual Section) ────────────────────────────────
+function WhatIsAnEPKSection() {
+  const [activeTab, setActiveTab] = useState<"modern" | "legacy">("modern");
 
   return (
-    <div className="w-full max-w-4xl mx-auto mt-12 rounded-3xl bg-[#0C0C0C] border border-[#C9A227]/30 p-2 sm:p-4 shadow-2xl shadow-[#C9A227]/10 relative overflow-hidden group">
-      {/* Top Bar with Tab Switchers */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-[#141414] rounded-2xl border border-[#222]">
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-[#EF4444]/70" />
-          <span className="w-3 h-3 rounded-full bg-[#F59E0B]/70" />
-          <span className="w-3 h-3 rounded-full bg-[#10B981]/70" />
-          <span className="text-[11px] text-[#777] font-mono ml-2 hidden sm:inline">
-            artistsepks.com/@kaylanvale
-          </span>
-        </div>
+    <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-[#1C1C1C] relative overflow-hidden">
+      {/* Ambient background glow */}
+      <div className="absolute top-1/2 left-0 w-[500px] h-[500px] bg-[#C9A227]/5 rounded-full blur-[160px] pointer-events-none -translate-x-1/2" />
 
-        <div className="flex items-center gap-1.5">
-          {(["main", "booking", "brand"] as const).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={cn(
-                "px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition-all",
-                activeTab === tab
-                  ? "bg-[#C9A227] text-[#050505] shadow-md shadow-[#C9A227]/20"
-                  : "bg-[#1C1C1C] text-[#888] hover:text-[#EDE9E0]"
+      <div className="max-w-7xl mx-auto space-y-16 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+          
+          {/* ── LEFT COLUMN: Industry Context & Core Value ── */}
+          <div className="lg:col-span-6 space-y-6">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#111] border border-[#C9A227]/30 shadow-md">
+              <Sparkles className="w-3.5 h-3.5 text-[#C9A227]" />
+              <span className="text-[11px] uppercase tracking-widest text-[#C9A227] font-semibold">
+                Industry Standard · The Artist Resume
+              </span>
+            </div>
+
+            <h2 className="font-display text-3xl sm:text-5xl uppercase tracking-wider text-[#EDE9E0] leading-[1.05]">
+              What Is An <span className="text-[#C9A227]">EPK?</span>
+            </h2>
+
+            <p className="text-sm sm:text-base text-[#AAA] leading-relaxed">
+              An <strong className="text-[#EDE9E0]">Electronic Press Kit (EPK)</strong> is an artist&apos;s digital identity, interactive business portfolio, and pitch engine. It is the single link sent to <strong className="text-[#EDE9E0]">Record Labels, Festival Talent Buyers, Music Supervisors, Booking Agents, and Journalists</strong> to evaluate talent in 30 seconds or less.
+            </p>
+
+            {/* 4 Feature Pills */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <div className="p-3.5 rounded-xl bg-[#0D0D0D] border border-[#222] space-y-1">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#EDE9E0]">
+                  <Zap className="w-4 h-4 text-[#C9A227]" />
+                  <span>30-Second A&amp;R Scan</span>
+                </div>
+                <p className="text-[11px] text-[#777] leading-normal">
+                  Curated visual hierarchy that hooks busy label executives instantly.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#0D0D0D] border border-[#222] space-y-1">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#EDE9E0]">
+                  <Play className="w-4 h-4 text-[#C9A227]" />
+                  <span>Lossless Direct Stream</span>
+                </div>
+                <p className="text-[11px] text-[#777] leading-normal">
+                  Embedded uncompressed audio &amp; 4K video with zero external app redirects.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#0D0D0D] border border-[#222] space-y-1">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#EDE9E0]">
+                  <Download className="w-4 h-4 text-[#C9A227]" />
+                  <span>300 DPI Asset Vault</span>
+                </div>
+                <p className="text-[11px] text-[#777] leading-normal">
+                  One-click ZIP downloads for approved press photos, logos &amp; riders.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#0D0D0D] border border-[#222] space-y-1">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#EDE9E0]">
+                  <ShieldCheck className="w-4 h-4 text-[#C9A227]" />
+                  <span>Rights &amp; Booking Direct</span>
+                </div>
+                <p className="text-[11px] text-[#777] leading-normal">
+                  Pre-cleared splits, management contacts, and direct inquiry channels.
+                </p>
+              </div>
+            </div>
+
+            {/* Action CTA */}
+            <div className="pt-2 flex items-center gap-4">
+              <Button
+                variant="gold"
+                asChild
+                className="bg-[#C9A227] hover:bg-[#d8b030] text-[#050505] font-bold uppercase text-xs tracking-wider h-11 px-6 rounded-xl shadow-lg shadow-[#C9A227]/20"
+              >
+                <Link href="/builder" className="flex items-center gap-2">
+                  <span>Create Your Free EPK</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </Button>
+              <Link
+                href="/features"
+                className="text-xs text-[#888] hover:text-[#EDE9E0] transition-colors flex items-center gap-1 font-medium"
+              >
+                <span>See all 14 EPK modules</span>
+                <ChevronRight className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
+
+          {/* ── RIGHT COLUMN: Interactive Comparison Card ── */}
+          <div className="lg:col-span-6 space-y-4">
+            {/* Switcher Toggle */}
+            <div className="flex items-center justify-between p-2 rounded-2xl bg-[#0F0F0F] border border-[#222]">
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#777] px-3">
+                Comparison:
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("modern")}
+                  className={cn(
+                    "px-4 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5",
+                    activeTab === "modern"
+                      ? "bg-[#C9A227] text-[#050505] shadow-md shadow-[#C9A227]/20"
+                      : "text-[#888] hover:text-[#EDE9E0]"
+                  )}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Modern Interactive EPK</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("legacy")}
+                  className={cn(
+                    "px-4 py-1.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all",
+                    activeTab === "legacy"
+                      ? "bg-[#C0272D] text-white shadow-md shadow-[#C0272D]/20"
+                      : "text-[#888] hover:text-[#EDE9E0]"
+                  )}
+                >
+                  <span>Outdated PDF / Linktree</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Dynamic Card */}
+            <AnimatePresence mode="wait">
+              {activeTab === "modern" ? (
+                <motion.div
+                  key="modern-card"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="p-6 sm:p-7 rounded-2xl bg-gradient-to-br from-[#121212] via-[#0E0E0E] to-[#080808] border border-[#C9A227]/30 shadow-2xl space-y-5"
+                >
+                  <div className="flex items-center justify-between pb-4 border-b border-[#222]">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-[#C9A227]/15 flex items-center justify-center">
+                        <BadgeCheck className="w-5 h-5 text-[#C9A227]" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase tracking-widest text-[#C9A227] font-semibold">
+                          ArtistEPKs Standard
+                        </span>
+                        <h4 className="text-base font-bold text-[#EDE9E0]">
+                          Interactive · Dynamic · Instant
+                        </h4>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full bg-[#22C55E]/15 border border-[#22C55E]/30 text-[10px] text-[#22C55E] font-bold uppercase tracking-wider">
+                      98% A&amp;R Open Rate
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 text-xs text-[#CCC]">
+                    <div className="p-3 rounded-xl bg-[#141414] border border-[#222] flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Play className="w-4 h-4 text-[#C9A227]" />
+                        <span className="font-medium text-[#EDE9E0]">Playable Focus Track (Lossless)</span>
+                      </div>
+                      <span className="text-[10px] text-[#22C55E] font-mono">Synced to Spotify</span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-[#141414] border border-[#222] flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-[#C9A227]" />
+                        <span className="font-medium text-[#EDE9E0]">Live DSP Streaming Analytics</span>
+                      </div>
+                      <span className="text-[10px] text-[#888] font-mono">3.2M Streams · Real-time</span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-[#141414] border border-[#222] flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Download className="w-4 h-4 text-[#C9A227]" />
+                        <span className="font-medium text-[#EDE9E0]">300DPI Press ZIP &amp; Vector PDF</span>
+                      </div>
+                      <span className="text-[10px] text-[#C9A227] font-mono">1-Click Package</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-between text-[11px] text-[#666]">
+                    <span>Hosted on your custom domain</span>
+                    <span className="text-[#C9A227] font-medium">Sub-second load time</span>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="legacy-card"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="p-6 sm:p-7 rounded-2xl bg-[#0D0D0D] border border-[#C0272D]/30 shadow-2xl space-y-5"
+                >
+                  <div className="flex items-center justify-between pb-4 border-b border-[#222]">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-[#C0272D]/15 flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-[#C0272D]" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase tracking-widest text-[#C0272D] font-semibold">
+                          Legacy 2015 Method
+                        </span>
+                        <h4 className="text-base font-bold text-[#EDE9E0]">
+                          Static PDF Attachments &amp; Linktree
+                        </h4>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full bg-[#C0272D]/15 border border-[#C0272D]/30 text-[10px] text-[#C0272D] font-bold uppercase tracking-wider">
+                      84% Rejection Rate
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 text-xs text-[#AAA]">
+                    <div className="p-3 rounded-xl bg-[#141414] border border-[#262626] flex items-center gap-2 text-[#EF4444]">
+                      <span className="font-bold">✕</span>
+                      <span>40MB file size gets blocked by corporate label email spam filters</span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-[#141414] border border-[#262626] flex items-center gap-2 text-[#EF4444]">
+                      <span className="font-bold">✕</span>
+                      <span>No audio preview — forces industry reps to open 4 different browser tabs</span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-[#141414] border border-[#262626] flex items-center gap-2 text-[#EF4444]">
+                      <span className="font-bold">✕</span>
+                      <span>Stats are static and out of date two weeks after you export the file</span>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-[#888] italic">
+                    Industry standard has shifted: A&amp;Rs demand interactive web portfolios with direct media playback.
+                  </p>
+                </motion.div>
               )}
-            >
-              {tab === "main" ? "A&R Pitch" : tab === "booking" ? "Booking Kit" : "Brand Deck"}
-            </button>
-          ))}
+            </AnimatePresence>
+          </div>
+
         </div>
       </div>
+    </section>
+  );
+}
 
-      {/* Live Mockup Inner Canvas */}
-      <div className="p-6 sm:p-8 bg-gradient-to-b from-[#111111] via-[#0A0A0A] to-[#050505] rounded-2xl mt-3 border border-[#1E1E1E] space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-[#222]">
-          <div className="space-y-1">
-            <Badge className="bg-[#C9A227]/15 text-[#C9A227] border-[#C9A227]/30 text-[10px] uppercase tracking-wider mb-1">
-              {current.badge}
-            </Badge>
-            <h3 className="font-display text-3xl sm:text-5xl uppercase tracking-wide text-[#EDE9E0]">
-              {current.artist}
-            </h3>
-            <p className="text-xs text-[#C9A227] font-medium">{current.tagline}</p>
-            <p className="text-[11px] text-[#777]">{current.genre}</p>
-          </div>
+// ── SECTION 2: 5 Specialized EPK Types (Dual Section) ────────────────────────
+function EPKTypesSection() {
+  const [activeType, setActiveType] = useState<number>(0);
 
-          <div className="flex items-center gap-4 bg-[#141414] p-3 rounded-xl border border-[#262626]">
-            <div>
-              <p className="text-xl font-display text-[#EDE9E0]">{current.stat1}</p>
-              <p className="text-[10px] text-[#888] uppercase">{current.stat1Label}</p>
-            </div>
-            <div className="w-px h-8 bg-[#2A2A2A]" />
-            <div>
-              <p className="text-xl font-display text-[#22C55E]">{current.stat2}</p>
-              <p className="text-[10px] text-[#888] uppercase">{current.stat2Label}</p>
-            </div>
-          </div>
+  const epkTypes = [
+    {
+      id: "release",
+      icon: Disc3,
+      title: "Single & Album Launch EPK",
+      badge: "Release Campaign & DSP Pitch",
+      target: "Spotify/Apple Editors, Music Blogs, Playlist Curators",
+      desc: "Spotlights your upcoming or newly dropped focus single/album with unreleased audio previews, high-res cover art, pre-save smart links, lyric breakdowns, and a tailored press angle.",
+      modules: ["Focus Track Lossless Player", "Pre-Save & DSP Smart Links", "Single Artwork (3000x3000px)", "Official Music Video Embed", "Campaign Press Angle"],
+      metricSample: "42K Pre-Saves · Added to 18 Editorial Playlists",
+      accent: "#C9A227",
+    },
+    {
+      id: "booking",
+      icon: Calendar,
+      title: "Tour & Live Booking Kit",
+      badge: "Talent Buyers & Festival Promoters",
+      target: "Festival Bookers, Venue Talent Buyers, Promoters, Production Crews",
+      desc: "Everything a live music promoter or production manager needs to book you. Features an interactive 24-channel technical rider, stage plot diagram, live performance video reel, and past ticket sales data.",
+      modules: ["Interactive Stage Plot", "24-Channel Input List & Tech Rider", "Live Show Sizzle Reel (4K)", "Room Capacity & Ticket History", "Hospitality & Travel Rider"],
+      metricSample: "Avg Cap: 850 · 100% Sellout · 4-Piece Band",
+      accent: "#C0272D",
+    },
+    {
+      id: "major",
+      icon: TrendingUp,
+      title: "A&R / Major Label & Investor Deck",
+      badge: "Label Scouts & Venture Backers",
+      target: "Major Label A&Rs (Sony, UMG, Warner), Indie Label Heads, Music Funds",
+      desc: "Designed to prove commercial viability and rapid audience growth. Highlights Spotify streaming velocity graphs, demographic retention data, playlist distribution, and catalog ownership breakdown.",
+      modules: ["DSP Streaming Velocity Chart", "Audience Demographics Breakdown", "Social Engagement Multiplier", "Master & Publishing Ownership", "Executive One-Sheet Hook"],
+      metricSample: "+44% MoM Streaming Velocity · 3.2M Streams",
+      accent: "#22C55E",
+    },
+    {
+      id: "sync",
+      icon: Tv,
+      title: "Sync & TV/Film Licensing Kit",
+      badge: "Music Supervisors & Media Placement",
+      target: "Film/TV Music Supervisors, Ad Agency Producers, Video Game Audio Leads",
+      desc: "Zero-friction music licensing hub. Provides instrumental stems, mood & tempo BPM tags, lyric sheets, and verified 100% one-stop pre-cleared master and publishing splits.",
+      modules: ["Instrumental & Vocal Stems", "BPM, Key & Mood Metadata", "100% One-Stop Clearance Badge", "Master & Publishing Split Sheet", "Broadcast Quality WAV Downloads"],
+      metricSample: "100% Pre-Cleared One-Stop · 128 BPM · E Minor",
+      accent: "#38BDF8",
+    },
+    {
+      id: "press",
+      icon: Newspaper,
+      title: "Press & Media Outreach EPK",
+      badge: "Music Journalists & Publicists",
+      target: "Rolling Stone, Pitchfork, Billboard, NPR Tiny Desk, Complex Editors",
+      desc: "Built specifically for music writers and print editors on deadline. Offers a 1-click ZIP bundle of approved 300DPI press photos, verified review pull quotes, and 3rd-person biography variations.",
+      modules: ["300 DPI Photo Download ZIP", "Short / Medium / Long Bios", "Verified Publication Quote Cards", "Recent Press Coverage Links", "Embargo Date & Password Gate"],
+      metricSample: "Featured in Pitchfork, FADER & NPR Tiny Desk",
+      accent: "#A855F7",
+    },
+  ];
+
+  const current = epkTypes[activeType];
+
+  return (
+    <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-[#1C1C1C] relative bg-[#070707]">
+      <div className="max-w-7xl mx-auto space-y-16">
+        
+        {/* Section Header */}
+        <div className="text-center space-y-3 max-w-3xl mx-auto">
+          <Badge variant="gold" className="px-3.5 py-1 text-xs">
+            <Layers className="w-3.5 h-3.5 mr-1.5" /> 5 Dedicated Formats
+          </Badge>
+          <h2 className="font-display text-3xl sm:text-5xl uppercase tracking-wider text-[#EDE9E0]">
+            The 5 Essential <span className="text-[#C9A227]">EPK Types</span>
+          </h2>
+          <p className="text-sm text-[#888]">
+            One generic kit doesn&apos;t fit every opportunity. Switch between purpose-built EPK architectures engineered for specific music industry targets.
+          </p>
         </div>
 
-        {/* Mock Audio Player & Bio Snippet */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-          <div className="md:col-span-7 space-y-3">
-            <p className="text-xs text-[#AAA] leading-relaxed">
-              {current.bio}
-            </p>
-            <div className="flex items-center gap-2 pt-1">
-              <span className="text-[10px] text-[#666] uppercase tracking-wider">Features:</span>
-              <span className="text-[10px] text-[#DDD] bg-[#181818] px-2 py-0.5 rounded border border-[#2A2A2A]">
-                Spotify Synced
-              </span>
-              <span className="text-[10px] text-[#DDD] bg-[#181818] px-2 py-0.5 rounded border border-[#2A2A2A]">
-                300 DPI Press Vault
-              </span>
-              <span className="text-[10px] text-[#DDD] bg-[#181818] px-2 py-0.5 rounded border border-[#2A2A2A]">
-                PDF One-Sheet
-              </span>
-            </div>
+        {/* Dual Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+          
+          {/* ── LEFT COLUMN: 5 Type Selector Tabs (5 Cols) ── */}
+          <div className="lg:col-span-5 space-y-2.5">
+            {epkTypes.map((t, idx) => {
+              const Icon = t.icon;
+              const isActive = activeType === idx;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setActiveType(idx)}
+                  className={cn(
+                    "w-full text-left p-4 rounded-2xl border transition-all flex items-start gap-3.5 group",
+                    isActive
+                      ? "bg-[#141414] border-[#C9A227] shadow-xl shadow-[#C9A227]/10"
+                      : "bg-[#0B0B0B] border-[#1E1E1E] hover:border-[#333] hover:bg-[#101010]"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors",
+                      isActive ? "bg-[#C9A227] text-[#050505]" : "bg-[#161616] text-[#888] group-hover:text-[#EDE9E0]"
+                    )}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <h4
+                        className={cn(
+                          "text-sm font-bold uppercase tracking-wider transition-colors",
+                          isActive ? "text-[#EDE9E0]" : "text-[#999] group-hover:text-[#DDD]"
+                        )}
+                      >
+                        {t.title}
+                      </h4>
+                      {isActive && (
+                        <span className="w-2 h-2 rounded-full bg-[#C9A227] animate-pulse" />
+                      )}
+                    </div>
+                    <p className="text-[11px] text-[#666] line-clamp-1">
+                      {t.target}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
 
-          <div className="md:col-span-5 p-4 rounded-xl bg-[#141414] border border-[#282828] space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#C9A227] flex items-center justify-center text-[#050505] font-bold">
-                  <Play className="w-4 h-4 fill-current ml-0.5" />
-                </div>
+          {/* ── RIGHT COLUMN: Live Interactive Type Blueprint (7 Cols) ── */}
+          <div className="lg:col-span-7">
+            <motion.div
+              key={current.id}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className="p-7 sm:p-8 rounded-3xl bg-gradient-to-br from-[#121212] via-[#0E0E0E] to-[#080808] border border-[#282828] shadow-2xl space-y-6"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-[#222]">
                 <div>
-                  <p className="text-xs font-semibold text-[#EDE9E0]">Midnight Velvet (Master)</p>
-                  <p className="text-[10px] text-[#888]">Direct Uncompressed Stream</p>
+                  <span className="text-[10px] uppercase tracking-widest text-[#C9A227] font-semibold">
+                    {current.badge}
+                  </span>
+                  <h3 className="font-display text-2xl sm:text-3xl uppercase tracking-wide text-[#EDE9E0]">
+                    {current.title}
+                  </h3>
+                </div>
+                <div className="px-3 py-1.5 rounded-xl bg-[#181818] border border-[#333] text-[11px] text-[#BBB] flex items-center gap-2">
+                  <User className="w-3.5 h-3.5 text-[#C9A227]" />
+                  <span>Target: {current.target.split(",")[0]}</span>
                 </div>
               </div>
-              <span className="text-[10px] text-[#C9A227] font-mono">3:24</span>
-            </div>
-            <div className="w-full bg-[#222] h-1.5 rounded-full overflow-hidden">
-              <div className="bg-[#C9A227] h-full w-2/3" />
-            </div>
-          </div>
-        </div>
 
-        {/* Watermark bar */}
-        <div className="pt-4 border-t border-[#1C1C1C] flex items-center justify-between text-[11px] text-[#777]">
-          <div className="flex items-center gap-2">
-            <img src="/artispreneur-logo.png" alt="Artispreneur" className="w-4 h-4 object-contain" />
-            <span>Powered by Artispreneur Ecosystem</span>
+              <p className="text-sm text-[#AAA] leading-relaxed">
+                {current.desc}
+              </p>
+
+              {/* Sample Metrics Strip */}
+              <div className="p-3.5 rounded-xl bg-[#141414] border border-[#222] flex items-center justify-between">
+                <span className="text-xs text-[#888] uppercase tracking-wider font-semibold">
+                  Key Metric Signal:
+                </span>
+                <span className="text-xs font-bold text-[#22C55E]">
+                  {current.metricSample}
+                </span>
+              </div>
+
+              {/* Key Architecture Modules */}
+              <div className="space-y-3">
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#777]">
+                  Modules Included In This Blueprint:
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {current.modules.map((m, i) => (
+                    <div
+                      key={i}
+                      className="p-2.5 rounded-lg bg-[#0A0A0A] border border-[#1E1E1E] flex items-center gap-2 text-xs text-[#DDD]"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#C9A227] flex-shrink-0" />
+                      <span>{m}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bottom Action */}
+              <div className="pt-4 border-t border-[#1F1F1F] flex flex-col sm:flex-row items-center justify-between gap-4">
+                <span className="text-[11px] text-[#666]">
+                  Exports to hosted web link + 300DPI vector PDF
+                </span>
+                <Button
+                  variant="gold"
+                  size="sm"
+                  asChild
+                  className="bg-[#C9A227] text-[#050505] font-bold uppercase tracking-wider text-xs"
+                >
+                  <Link href={`/builder?template=${current.id}`}>
+                    <span>Build {current.title.split(" ")[0]} Kit</span>
+                    <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                  </Link>
+                </Button>
+              </div>
+            </motion.div>
           </div>
-          <Link href="/builder" className="text-[#C9A227] hover:underline flex items-center gap-1 font-medium">
-            <span>Customize This EPK in Studio</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
+
         </div>
       </div>
-    </div>
+    </section>
+  );
+}
+
+// ── SECTION 3: High-Converting EPK Design System (Dual Section) ──────────────
+function EPKDesignSystemSection() {
+  return (
+    <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-[#1C1C1C] relative overflow-hidden">
+      {/* Ambient background glow */}
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[#C9A227]/6 rounded-full blur-[180px] pointer-events-none translate-x-1/3" />
+
+      <div className="max-w-7xl mx-auto space-y-16 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+          
+          {/* ── LEFT COLUMN: Design System Principles ── */}
+          <div className="lg:col-span-6 space-y-6">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#111] border border-[#C9A227]/30 shadow-md">
+              <Award className="w-3.5 h-3.5 text-[#C9A227]" />
+              <span className="text-[11px] uppercase tracking-widest text-[#C9A227] font-semibold">
+                Artispreneur Standard · Anti-Slop Architecture
+              </span>
+            </div>
+
+            <h2 className="font-display text-3xl sm:text-5xl uppercase tracking-wider text-[#EDE9E0] leading-[1.05]">
+              Engineered For <span className="text-[#C9A227]">Visual Excellence</span>
+            </h2>
+
+            <p className="text-sm sm:text-base text-[#AAA] leading-relaxed">
+              Every EPK generated on our platform enforces the Artispreneur Design System. We ban generic AI-slop and cluttered widgets in favor of intentional luxury obsidian dark aesthetics, editorial typography pairing, and strict 8-module conversion hierarchy.
+            </p>
+
+            {/* 4 Design Pillars */}
+            <div className="space-y-3.5 pt-2">
+              <div className="flex items-start gap-3.5 p-3 rounded-xl bg-[#0D0D0D] border border-[#222]">
+                <div className="w-8 h-8 rounded-lg bg-[#C9A227]/15 flex items-center justify-center flex-shrink-0 text-[#C9A227] font-bold text-xs">
+                  01
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-[#EDE9E0] uppercase tracking-wide">
+                    Obsidian &amp; Warm Gold Palette
+                  </h4>
+                  <p className="text-[11px] text-[#777] leading-normal">
+                    #080808 deep obsidian surface, #141414 cards, and #C9A227 metallic gold accents passing strict WCAG 2.2 AA contrast.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3.5 p-3 rounded-xl bg-[#0D0D0D] border border-[#222]">
+                <div className="w-8 h-8 rounded-lg bg-[#C9A227]/15 flex items-center justify-center flex-shrink-0 text-[#C9A227] font-bold text-xs">
+                  02
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-[#EDE9E0] uppercase tracking-wide">
+                    Editorial Typography Hierarchy
+                  </h4>
+                  <p className="text-[11px] text-[#777] leading-normal">
+                    Commanding display headers in Bebas Neue / Syne paired with geometric DM Sans body copy and monospace data strips.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3.5 p-3 rounded-xl bg-[#0D0D0D] border border-[#222]">
+                <div className="w-8 h-8 rounded-lg bg-[#C9A227]/15 flex items-center justify-center flex-shrink-0 text-[#C9A227] font-bold text-xs">
+                  03
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-[#EDE9E0] uppercase tracking-wide">
+                    The 8 Core Conversion Modules
+                  </h4>
+                  <p className="text-[11px] text-[#777] leading-normal">
+                    Hero, Live Stats, Bio, Lossless Audio, 300DPI Vault, Stage Plot Rider, Press Quotes, and Direct Contact Lock.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3.5 p-3 rounded-xl bg-[#0D0D0D] border border-[#222]">
+                <div className="w-8 h-8 rounded-lg bg-[#C9A227]/15 flex items-center justify-center flex-shrink-0 text-[#C9A227] font-bold text-xs">
+                  04
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-[#EDE9E0] uppercase tracking-wide">
+                    Live Web + Instant Vector Print PDF
+                  </h4>
+                  <p className="text-[11px] text-[#777] leading-normal">
+                    Any change in the EPK studio instantly updates both the live shareable URL and generates a print-ready vector PDF one-sheet.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <Button
+                variant="gold"
+                asChild
+                className="bg-[#C9A227] hover:bg-[#d8b030] text-[#050505] font-bold uppercase text-xs tracking-wider h-11 px-6 rounded-xl shadow-lg shadow-[#C9A227]/20"
+              >
+                <Link href="/templates" className="flex items-center gap-2">
+                  <span>Explore Design System Templates</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+
+          {/* ── RIGHT COLUMN: Interactive Token & Quality Spec Card ── */}
+          <div className="lg:col-span-6 space-y-4">
+            <div className="p-7 sm:p-8 rounded-3xl bg-gradient-to-br from-[#121212] via-[#0E0E0E] to-[#080808] border border-[#C9A227]/30 shadow-2xl space-y-6">
+              
+              <div className="flex items-center justify-between pb-4 border-b border-[#222]">
+                <div>
+                  <span className="text-[10px] uppercase tracking-widest text-[#C9A227] font-semibold">
+                    Live Token Inspector
+                  </span>
+                  <h3 className="font-display text-2xl uppercase tracking-wide text-[#EDE9E0]">
+                    Design System Palette
+                  </h3>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-[#22C55E]/15 border border-[#22C55E]/30 text-[10px] text-[#22C55E] font-bold uppercase tracking-wider">
+                  Taste Score: 99/100
+                </span>
+              </div>
+
+              {/* Color Swatches Grid */}
+              <div className="space-y-2">
+                <span className="text-[11px] text-[#777] uppercase tracking-wider font-semibold">
+                  Core Color Architecture
+                </span>
+                <div className="grid grid-cols-5 gap-2">
+                  <div className="p-2.5 rounded-xl bg-[#080808] border border-[#222] text-center space-y-1">
+                    <div className="w-full h-6 rounded bg-[#080808] border border-[#333]" />
+                    <p className="text-[9px] font-mono text-[#AAA]">#080808</p>
+                    <p className="text-[8px] text-[#666] uppercase">Obsidian</p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[#141414] border border-[#222] text-center space-y-1">
+                    <div className="w-full h-6 rounded bg-[#141414] border border-[#333]" />
+                    <p className="text-[9px] font-mono text-[#AAA]">#141414</p>
+                    <p className="text-[8px] text-[#666] uppercase">Surface</p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[#141414] border border-[#222] text-center space-y-1">
+                    <div className="w-full h-6 rounded bg-[#C9A227]" />
+                    <p className="text-[9px] font-mono text-[#C9A227]">#C9A227</p>
+                    <p className="text-[8px] text-[#C9A227] uppercase">Gold</p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[#141414] border border-[#222] text-center space-y-1">
+                    <div className="w-full h-6 rounded bg-[#22C55E]" />
+                    <p className="text-[9px] font-mono text-[#22C55E]">#22C55E</p>
+                    <p className="text-[8px] text-[#22C55E] uppercase">Verified</p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[#141414] border border-[#222] text-center space-y-1">
+                    <div className="w-full h-6 rounded bg-[#EDE9E0]" />
+                    <p className="text-[9px] font-mono text-[#DDD]">#EDE9E0</p>
+                    <p className="text-[8px] text-[#888] uppercase">Platinum</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Typography Spec */}
+              <div className="p-4 rounded-xl bg-[#141414] border border-[#222] space-y-2">
+                <span className="text-[10px] text-[#C9A227] uppercase tracking-wider font-semibold">
+                  Typography Pairing Tokens
+                </span>
+                <div className="flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-display text-lg uppercase text-[#EDE9E0]">BEBAS NEUE</span>
+                    <p className="text-[10px] text-[#777]">Display / Headlines (Uppercase, 0.05em track)</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-sans font-semibold text-sm text-[#EDE9E0]">DM Sans / Inter</span>
+                    <p className="text-[10px] text-[#777]">Body &amp; Microcopy (140% line-height)</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 8-Module Quality Gate Checklist */}
+              <div className="space-y-2">
+                <span className="text-[11px] text-[#777] uppercase tracking-wider font-semibold">
+                  8-Module Automated Quality Checklist
+                </span>
+                <div className="grid grid-cols-2 gap-2 text-[11px] text-[#BBB]">
+                  <div className="flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-[#22C55E]" />
+                    <span>Hero &amp; High-Res Portrait</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-[#22C55E]" />
+                    <span>Live Spotify Sync</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-[#22C55E]" />
+                    <span>3-Tier Story Bio</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-[#22C55E]" />
+                    <span>Lossless Track Player</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-[#22C55E]" />
+                    <span>300DPI Press Vault</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-[#22C55E]" />
+                    <span>Tech Rider &amp; Stage Plot</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-[#22C55E]" />
+                    <span>Press Pull Quotes</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-[#22C55E]" />
+                    <span>Direct Booking &amp; Team Lock</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 text-center">
+                <span className="text-[11px] text-[#666]">
+                  Guaranteed 100% responsive on all mobile, tablet, and desktop viewports.
+                </span>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -912,6 +1440,14 @@ export default function HomePage() {
       </section>
       {/* ────────────────────────────────────────────────────────── */}
 
+      {/* ── SECTION 1: WHAT IS AN EPK (DUAL SECTION) ── */}
+      <WhatIsAnEPKSection />
+
+      {/* ── SECTION 2: 5 SPECIALIZED EPK TYPES (DUAL SECTION) ── */}
+      <EPKTypesSection />
+
+      {/* ── SECTION 3: EPK DESIGN SYSTEM & FRAMEWORK (DUAL SECTION) ── */}
+      <EPKDesignSystemSection />
 
       {/* Free AI Bio Generator Homepage Section */}
       <HomepageBioGenerator />

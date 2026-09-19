@@ -1,3 +1,8 @@
+---
+name: epk-builder
+description: Build high-converting, professional Electronic Press Kits (EPKs) using the Artispreneur Design System, 5 specialized EPK blueprints, and 8-block conversion architecture.
+---
+
 # EPK Builder — Artispreneur Design System & Workflow Skill
 
 Build world-class, high-converting Electronic Press Kits (EPKs) using the **Artispreneur Design System** and a structured, repeatable architecture. Every generated EPK must look like a signed major-label act, eliminate generic "AI-slop", and pass strict visual and functional quality gates.
@@ -63,23 +68,7 @@ EPK Blueprint Architecture
 
 ---
 
-## 4. Intake & Enrichment Phase
-
-### 4.1 Intake Fields
-1. **Identity:** Artist/Band Name, Stage Name, Genre, Hometown/City, Years Active.
-2. **Story:** Key influences, narrative origin, breakthrough milestone.
-3. **Music:** Spotify Artist ID/URL, Apple Music, SoundCloud, YouTube focus video URL.
-4. **Business & Team:** Manager Name + Email, Booking Agent, Label / Independent status, PRO affiliation (ASCAP/BMI/SESAC).
-5. **Assets:** Hi-res photos (300DPI), stage plot specifications, press coverage links.
-
-### 4.2 Automated Enrichment
-- **Spotify API:** Fetch monthly listeners, follower count, top 5 releases, genre tags.
-- **AI Narrative Engine:** Produce third-person, pitch-ready bio with high-impact opening hook.
-- **Social Metrics:** Compile engagement velocity and streaming growth rates.
-
----
-
-## 5. Quality Gate & Anti-Slop Rules
+## 4. Quality Gate & Anti-Slop Rules
 
 Before finalizing or publishing any EPK, verify compliance with these non-negotiable rules:
 

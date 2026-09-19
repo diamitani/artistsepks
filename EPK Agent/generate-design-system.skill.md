@@ -1,26 +1,24 @@
-# Skill — Generate Design System
+# Skill — Generate Design System (Artispreneur Standard)
 
-**Purpose:** Resolve a concrete design system (palette, typography, layout grid, section order) for the
-final EPK based on the selected template and any brand assets/guidelines supplied.
+**Purpose:** Resolve a concrete, anti-slop design system (palette, typography scale, layout geometry, section order) for the EPK based on the selected EPK type and brand assets.
 
-**Trigger:** Template selection is known (from intake or default) and `enhanced.md` exists.
+**Trigger:** EPK type selection is known (Single/Album Launch, Tour/Booking, A&R/Label, Sync Licensing, Press/Media) and intake data is collected.
 
-**Inputs:** `references/epk-template-library.md`, `references/epk-design-tokens.md`, brand assets/brand
-guidelines from `master.md` → `## Media & Uploads`, template choice (One Sheeter, General, Booking, Media,
-Brand).
+**Inputs:** `epk-design-tokens.md`, `skills/epk-builder/SKILL.md`, brand assets/uploads from artist intake.
 
 **Procedure:**
-1. Load the base token set for the selected template family from `references/epk-design-tokens.md`.
-2. If the artist supplied brand assets (logo, brand guideline doc, color palette), extract dominant colors
-   and any stated brand fonts/voice, and override the template's default palette/type with the artist's
-   brand where provided — template structure (layout/section order) stays fixed, brand identity overrides
-   surface styling.
-3. Resolve final tokens: color palette (primary/secondary/accent/background/text), type scale (display,
-   heading, body), spacing/grid rules, and section order for the chosen template.
-4. Record every override decision and its source (brand asset vs. template default).
+1. **Load Artispreneur Base Tokens:**
+   - Obsidian background (`#080808`), Card surface (`#141414`), Metallic Gold accent (`#C9A227`), Platinum text (`#EDE9E0`).
+   - Typography: Display in `Bebas Neue` / `Syne`, Body in `DM Sans` / `Inter`, Monospace for metrics.
+2. **Apply Type-Specific Layout Configuration:**
+   - Single Launch → Emphasize focus track waveform player & artwork.
+   - Tour Booking → Emphasize 24-channel tech rider & interactive stage plot.
+   - A&R Deck → Emphasize streaming velocity charts & audience demographics.
+   - Sync Licensing → Emphasize stem downloads & 100% one-stop clearance badges.
+   - Press Outreach → Emphasize 300DPI photo ZIP bundle & accredited press quotes.
+3. **Assemble the 8-Module Blueprint:**
+   - Hero → Live Stats → Triple-Tier Bio → Lossless Audio → Press Vault → Tech Rider/Sync → Press Proof → Booking Lock.
+4. **Enforce Quality Gate:**
+   - Verify WCAG 2.2 AA contrast, no generic placeholder text, 100% responsive geometry.
 
-**Output:** `epk-design-system.json` — resolved token set + section order + provenance notes.
-
-**Guardrails:** Never invent a brand color/font not evidenced by supplied assets — fall back to the
-template default and note the assumption. Section order/required sections come from the template spec and
-are not user-overridable without an explicit request.
+**Output:** `epk-design-system.json` containing resolved tokens, component configurations, and quality verification flags.

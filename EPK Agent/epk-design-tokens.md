@@ -1,33 +1,30 @@
-# EPK Design Tokens — Per Template
+# EPK Design Tokens — Artispreneur Design System
 
-Used by `skills/generate-design-system.skill.md`. Brand assets (logo/colors/fonts) override these defaults
-when explicitly supplied in intake; template layout/section order is not overridable by brand assets.
+Used by `generate-design-system.skill.md` and all EPK builder agents.
 
-## Shared base tokens
-- Type scale: Display 48/36 (desktop/mobile), H1 32/24, H2 24/20, Body 16/15, Caption 13/12.
-- Grid: 12-column, 24px gutter (HTML); mirrored margins for PDF at Letter/A4.
-- Image treatment: hero image full-bleed on One Sheeter/Booking; framed with caption on Media/General.
+## Core Palette Tokens
+- `--bg-obsidian`: `#080808`
+- `--bg-card`: `#141414`
+- `--bg-card-hover`: `#1A1A1A`
+- `--border-subtle`: `rgba(255, 255, 255, 0.08)`
+- `--border-highlight`: `rgba(201, 162, 39, 0.35)`
+- `--accent-gold`: `#C9A227`
+- `--accent-gold-hover`: `#DFBA5E`
+- `--accent-emerald`: `#22C55E`
+- `--accent-crimson`: `#C0272D`
+- `--text-platinum`: `#EDE9E0`
+- `--text-muted`: `#888888`
+- `--text-secondary`: `#AAAAAA`
 
-## One Sheeter
-- Palette: high-contrast, one accent color, dark or light background — optimized for quick scanning.
-- Density: tight vertical rhythm, minimal whitespace, stat strip uses monospace or tabular numerals.
+## Typography Scale Tokens
+- Display (Hero Title): `Bebas Neue` / `Syne` — 64px/48px/36px (desktop/tablet/mobile), line-height 0.95, letter-spacing 0.04em, uppercase.
+- Headings (H1/H2/H3): `Bebas Neue` / `Syne` — 36px / 28px / 22px.
+- Body & Story: `DM Sans` / `Inter` — 15px / 14px, line-height 1.6, color `#AAAAAA`.
+- Monospace / Stats: `JetBrains Mono` / `SF Mono` — tabular figures, uppercase tracking.
 
-## General
-- Palette: neutral background, one primary + one accent color derived from brand assets or genre-typical
-  mood (e.g., warmer accents for R&B/soul, cooler/neon for EDM) — only apply genre-typical defaults when no
-  brand asset is supplied, and note this as an assumption.
-- Density: generous section spacing, standard editorial rhythm.
-
-## Booking
-- Palette: professional, muted, high-legibility — riders rendered in a monospace or tabular block for
-  scannability by production staff.
-- Density: performance history and riders get the most visual weight; bio is condensed.
-
-## Media
-- Palette: editorial, photo-first, low-chroma UI so photography and press quotes stand out.
-- Density: generous whitespace, large pull-quotes for press mentions.
-
-## Brand
-- Palette: strictly derived from supplied brand assets when available; if none supplied, fall back to
-  General palette and flag the fallback.
-- Density: data-visualization-forward (engagement score breakdown gets a chart/table treatment).
+## 5 EPK Type Token Overrides
+1. **Single & Album Launch**: Highlight color `--accent-gold` (`#C9A227`), artwork aspect ratio 1:1, waveform player primary.
+2. **Tour & Live Booking**: Highlight color `--accent-crimson` (`#C0272D`), stage plot grid active, 24-channel input matrix.
+3. **A&R / Label & Investor**: Highlight color `--accent-emerald` (`#22C55E`), streaming velocity charts active, demographic donut charts.
+4. **Sync & TV/Film Licensing**: Highlight color `#38BDF8` (Sky), mood/BPM badges, 100% pre-cleared one-stop clearance stamp.
+5. **Press & Media Outreach**: Highlight color `#A855F7` (Purple), 3-tier bio selector, 300DPI photo ZIP bundle trigger.
