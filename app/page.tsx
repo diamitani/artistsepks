@@ -763,60 +763,155 @@ function ComparisonSection() {
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#050505] text-[#EDE9E0]">
-      {/* Hero Section */}
-      <section className="relative pt-12 pb-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        {/* Ambient background glow */}
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] rounded-full bg-[#C9A227]/10 blur-[150px] pointer-events-none" />
 
-        <div className="relative z-10 max-w-5xl mx-auto text-center space-y-6">
-          {/* Artispreneur Badge */}
-          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#111] border border-[#C9A227]/40 shadow-lg shadow-[#C9A227]/5">
-            <img src="/artispreneur-logo.png" alt="Artispreneur" className="w-5 h-5 object-contain" />
-            <span className="text-xs uppercase tracking-widest text-[#EDE9E0] font-semibold">
-              Powered by <span className="text-[#C9A227]">Artispreneur</span>
-            </span>
+      {/* ── DUAL COLUMN HERO ─────────────────────────────────────── */}
+      <section className="relative min-h-[90vh] flex items-center px-4 sm:px-6 lg:px-8 overflow-hidden">
+
+        {/* Ambient glows */}
+        <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-[#C9A227]/8 rounded-full blur-[180px] pointer-events-none -translate-x-1/3 -translate-y-1/4" />
+        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-[#C0272D]/6 rounded-full blur-[160px] pointer-events-none translate-x-1/4 translate-y-1/4" />
+
+        <div className="relative z-10 max-w-7xl mx-auto w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center pt-16 lg:pt-8">
+
+            {/* ── LEFT: Copy Column ── */}
+            <div className="flex flex-col gap-7">
+
+              {/* Artispreneur pill badge */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#111] border border-[#C9A227]/35 shadow-md shadow-[#C9A227]/5 w-fit">
+                <img src="/artispreneur-logo.png" alt="Artispreneur" className="w-4 h-4 object-contain" />
+                <span className="text-[11px] uppercase tracking-widest text-[#C9A227] font-semibold">
+                  Powered by Artispreneur
+                </span>
+              </div>
+
+              {/* Headline */}
+              <div className="space-y-2">
+                <h1 className="font-display text-[clamp(3rem,6vw,5.5rem)] leading-[0.92] tracking-wide text-[#EDE9E0] uppercase">
+                  Get Your
+                  <br />
+                  <span className="text-[#C9A227]">Music</span>
+                  <br />
+                  Press Kit.
+                </h1>
+              </div>
+
+              {/* Description */}
+              <p className="text-base sm:text-lg text-[#888] leading-relaxed max-w-md">
+                Create high-impact Electronic Press Kits in minutes. AI writes your bio,
+                pulls your live stats from Spotify &amp; Apple Music, generates technical riders,
+                and delivers stunning PDF one-sheets + shareable hosted pages.
+              </p>
+
+              {/* Trust signals row */}
+              <div className="flex flex-wrap items-center gap-4 text-[11px] text-[#666] uppercase tracking-wider font-medium">
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#22C55E]" />
+                  Free to start
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#22C55E]" />
+                  No design skills needed
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#22C55E]" />
+                  Ready in 5 minutes
+                </span>
+              </div>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row items-start gap-3">
+                <Button
+                  variant="gold"
+                  asChild
+                  className="bg-[#C9A227] hover:bg-[#d8b030] text-[#050505] font-bold uppercase text-xs tracking-wider h-12 px-8 shadow-xl shadow-[#C9A227]/20 rounded-xl"
+                >
+                  <Link href="/builder" className="flex items-center gap-2">
+                    <span>Build Your EPK Free</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </Button>
+                <Button
+                  variant="outline"
+                  asChild
+                  className="border-[#2A2A2A] text-[#CCC] hover:border-[#C9A227]/50 hover:text-[#EDE9E0] h-12 px-6 rounded-xl"
+                >
+                  <a href="#bio-generator" className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#C9A227]" />
+                    <span>Free Bio Generator</span>
+                  </a>
+                </Button>
+              </div>
+
+              {/* Social proof micro-line */}
+              <p className="text-[11px] text-[#555]">
+                Trusted by independent artists, managers, and labels worldwide.
+              </p>
+            </div>
+
+            {/* ── RIGHT: Visual Column ── */}
+            <div className="relative flex items-center justify-center lg:justify-end">
+              {/* Glow behind image */}
+              <div className="absolute inset-0 bg-[#C9A227]/10 blur-[80px] rounded-3xl pointer-events-none" />
+
+              {/* Floating stat badges */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4, duration: 0.6 }}
+                className="absolute -left-4 top-8 z-20 bg-[#0D0D0D] border border-[#C9A227]/30 rounded-xl px-3 py-2 shadow-xl hidden sm:flex items-center gap-2"
+              >
+                <div className="w-6 h-6 rounded-lg bg-[#C9A227]/20 flex items-center justify-center">
+                  <TrendingUp className="w-3.5 h-3.5 text-[#C9A227]" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#EDE9E0]">3.2M+</p>
+                  <p className="text-[9px] text-[#888] uppercase tracking-wider">Global Streams</p>
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6, duration: 0.6 }}
+                className="absolute -right-4 bottom-10 z-20 bg-[#0D0D0D] border border-[#22C55E]/30 rounded-xl px-3 py-2 shadow-xl hidden sm:flex items-center gap-2"
+              >
+                <div className="w-6 h-6 rounded-lg bg-[#22C55E]/15 flex items-center justify-center">
+                  <BadgeCheck className="w-3.5 h-3.5 text-[#22C55E]" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#EDE9E0]">A&R Priority</p>
+                  <p className="text-[9px] text-[#888] uppercase tracking-wider">Label Ready</p>
+                </div>
+              </motion.div>
+
+              {/* EPK mockup image */}
+              <motion.div
+                initial={{ opacity: 0, y: 24, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: 0.2, duration: 0.7, ease: "easeOut" }}
+                className="relative z-10 w-full max-w-lg lg:max-w-none rounded-2xl overflow-hidden border border-[#C9A227]/20 shadow-2xl shadow-[#C9A227]/10"
+              >
+                {/* Browser chrome bar */}
+                <div className="flex items-center gap-1.5 px-3 py-2.5 bg-[#111] border-b border-[#222]">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444]/70" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]/70" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]/70" />
+                  <span className="ml-3 text-[10px] text-[#555] font-mono">artistsepks.com/@kaylanvale</span>
+                </div>
+                <img
+                  src="/epk-hero-mockup.jpg"
+                  alt="ArtistEPKs — Music Press Kit Dashboard"
+                  className="w-full h-auto block"
+                />
+              </motion.div>
+            </div>
+
           </div>
-
-          <h1 className="font-display text-[clamp(2.8rem,7vw,6.5rem)] leading-none tracking-wider text-[#EDE9E0]">
-            THE EPK PLATFORM THAT GETS YOU<br />
-            <span className="text-[#C9A227]">BOOKED, STREAMED &amp; SIGNED.</span>
-          </h1>
-
-          <p className="max-w-2xl mx-auto text-base sm:text-lg text-[#A0A0A0] leading-relaxed">
-            Create high-impact Electronic Press Kits in minutes. AI writes your bio,
-            pulls your live stats from Spotify &amp; Apple Music, generates technical riders,
-            and delivers stunning Vector PDFs + hosted pages.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
-            <Button
-              variant="gold"
-              size="xl"
-              asChild
-              className="bg-[#C9A227] hover:bg-[#d8b030] text-[#050505] font-bold uppercase text-xs tracking-wider h-12 px-8 shadow-xl shadow-[#C9A227]/20"
-            >
-              <Link href="/builder" className="flex items-center gap-2">
-                <span>Build Your EPK Free</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </Button>
-            <Button
-              variant="outline"
-              size="xl"
-              asChild
-              className="border-[#C9A227]/30 text-[#EDE9E0] hover:border-[#C9A227] hover:bg-[#C9A227]/10 h-12 px-8"
-            >
-              <a href="#bio-generator" className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#C9A227]" />
-                <span>Free Bio Generator</span>
-              </a>
-            </Button>
-          </div>
-
-          {/* Interactive Live Demo */}
-          <HeroEPKPreview />
         </div>
       </section>
+      {/* ────────────────────────────────────────────────────────── */}
+
 
       {/* Free AI Bio Generator Homepage Section */}
       <HomepageBioGenerator />
