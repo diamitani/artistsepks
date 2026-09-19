@@ -120,6 +120,28 @@ export const DEFAULT_STYLES: Record<EPKTemplate, StyleTokens> = {
     ctaStyle: "outline",
     statStyle: "filled",
   },
+  "one-sheet": {
+    accentColor: "#DFBA5E",
+    fontHeading: "Bebas Neue",
+    fontBody: "DM Sans",
+    borderRadius: "8px",
+    sectionSpacing: "40px",
+    maxWidth: "1000px",
+    heroMinHeight: "400px",
+    ctaStyle: "solid",
+    statStyle: "filled",
+  },
+  media: {
+    accentColor: "#C9A227",
+    fontHeading: "Playfair Display",
+    fontBody: "DM Sans",
+    borderRadius: "12px",
+    sectionSpacing: "70px",
+    maxWidth: "1100px",
+    heroMinHeight: "520px",
+    ctaStyle: "outline",
+    statStyle: "bordered",
+  },
 };
 
 // ── Blueprint utilities ───────────────────────────────────────────────────────

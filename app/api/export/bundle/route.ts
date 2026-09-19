@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runEPKPipeline } from "@/lib/epk-agent-pipeline";
-import { generateEPKHtml } from "@/lib/export/html";
+import { renderEPKToHtml } from "@/lib/export/html";
 import type { ArtistProfile, EPKTemplate } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     const template = (body.template || "main") as EPKTemplate;
 
     const artifacts = runEPKPipeline(profile, template);
-    const epkHtml = generateEPKHtml(artifacts.epkData);
+    const epkHtml = renderEPKToHtml(artifacts.epkData, template);
 
     const bundle = {
       artistName: artifacts.epkData.artistName,
