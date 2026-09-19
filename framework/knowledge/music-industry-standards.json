@@ -1,0 +1,27 @@
+{
+  "industry_benchmarks": {
+    "ar_signing_signals": {
+      "breakout_monthly_listeners": 25000,
+      "major_label_priority_listeners": 75000,
+      "organic_growth_rate_mom": "15%+",
+      "key_dsp_playlists": ["RapCaviar", "New Music Friday", "Lorem", "Pollux", "All New Indie", "R&B UK"]
+    },
+    "press_kit_essential_assets": [
+      "300 DPI High-Resolution Photography (Landscape & Portrait)",
+      "Transparent Vector Brandmarks (SVG / PNG)",
+      "Approved 3-Paragraph Journalist Bio",
+      "Direct Lossless Audio / Uncompressed Streaming Embeds",
+      "Interactive 24-Channel Technical Stage Plot & Rider",
+      "1-Page Executive One-Sheet Summary PDF"
+    ],
+    "sync_licensing_metadata": {
+      "required_fields": ["BPM", "Musical Key", "Mood Tags", "Vocal Gender / Instrumental", "PRO Affiliation", "Split Percentage Confirmation"],
+      "clearance_types": ["100% One-Stop (Master + Publishing)", "Co-Publishing Clearable", "Sample Cleared"]
+    },
+    "live_performance_tiers": [
+      { "name": "Intimate / VIP Acoustic", "capacity": "50 - 250", "set_length": "45 min" },
+      { "name": "Standard Club Headline", "capacity": "250 - 1,200", "set_length": "60 - 75 min" },
+      { "name": "Major Festival Headline", "capacity": "5,000 - 50,000+", "set_length": "75 - 90 min" }
+    ]
+  }
+}

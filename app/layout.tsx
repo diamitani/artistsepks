@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { DM_Sans, Bebas_Neue } from "next/font/google";
 import "./globals.css";
+import { ArtispreneurNav } from "@/components/ui/artispreneur-nav";
+import { ArtispreneurFooter } from "@/components/ui/artispreneur-footer";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const bebasNeue = Bebas_Neue({
@@ -15,12 +17,54 @@ const bebasNeue = Bebas_Neue({
 });
 
 export const metadata: Metadata = {
-  title: "EPK Agent — Create Professional Press Kits with AI",
-  description: "Build, manage, and share your Electronic Press Kit in minutes. AI-powered content, professional templates, PDF export, and hosted pages.",
+  metadataBase: new URL("https://artistsepks.com"),
+  title: "ArtistEPKs — AI Electronic Press Kit Builder | Powered by Artispreneur",
+  description:
+    "Build luxury, high-converting Electronic Press Kits in minutes. AI-powered bio writing, direct Spotify & Apple Music sync, 300DPI press asset vaults, interactive riders, and PDF export for artists, managers, and labels.",
+  keywords: [
+    "Artist EPK",
+    "Electronic Press Kit",
+    "EPK Builder",
+    "Music Press Kit Template",
+    "Music Industry Pitch Deck",
+    "DJ EPK",
+    "Band Press Kit",
+    "Artispreneur",
+    "Music Manager Tools",
+    "Record Label EPK",
+  ],
+  authors: [{ name: "Artispreneur", url: "https://artispreneur.com" }],
+  creator: "Artispreneur",
+  publisher: "ArtistsEPKs by Artispreneur",
   openGraph: {
-    title: "EPK Agent",
-    description: "Create professional EPKs with AI",
+    title: "ArtistEPKs — The Modern EPK Builder Platform",
+    description:
+      "Pitch like a major label. AI bio writing, verified DSP metrics, tech rider generator, and DocSend-style EPK analytics.",
+    url: "https://artistsepks.com",
+    siteName: "ArtistsEPKs",
+    images: [
+      {
+        url: "/artispreneur-logo.png",
+        width: 1200,
+        height: 630,
+        alt: "ArtistsEPKs — Powered by Artispreneur",
+      },
+    ],
+    locale: "en_US",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ArtistEPKs — AI Electronic Press Kit Platform",
+    description:
+      "Create high-impact music press kits in minutes. Powered by Artispreneur.",
+    images: ["/artispreneur-logo.png"],
+    creator: "@artispreneur",
+  },
+  icons: {
+    icon: "/artispreneur-logo.png",
+    shortcut: "/artispreneur-logo.png",
+    apple: "/artispreneur-logo.png",
   },
 };
 
@@ -29,30 +73,42 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "ArtistsEPKs",
+    operatingSystem: "Web",
+    applicationCategory: "MultimediaApplication",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+    },
+    creator: {
+      "@type": "Organization",
+      name: "Artispreneur",
+      url: "https://artispreneur.com",
+      logo: "https://artistsepks.com/artispreneur-logo.png",
+    },
+    description:
+      "The premier AI-powered Electronic Press Kit and pitch deck platform for artists, managers, and record labels.",
+  };
+
   return (
-    <html lang="en" className={`${dmSans.variable} ${bebasNeue.variable}`}>
-      <body className="min-h-screen flex flex-col">
+    <html lang="en" className={`${dmSans.variable} ${bebasNeue.variable} dark`}>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
+      <body className="min-h-screen flex flex-col bg-[#050505] text-[#EDE9E0] selection:bg-[#C9A227]/30 selection:text-[#EDE9E0]">
         <div className="grain-overlay" aria-hidden="true" />
-        <div className="flex-1">{children}</div>
-        <footer className="border-t border-[#2A2A2A] bg-[#0A0A0A] py-4 px-6">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <a
-              href="https://artispreneur.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2.5 group"
-            >
-              <img src="/artispreneur%20logo.png" alt="Artispreneur" width="20" height="20" className="w-5 h-5 rounded flex-shrink-0 object-contain" />
-              <span className="text-[11px] text-[#777] group-hover:text-[#C0272D] transition-colors tracking-wider uppercase font-medium">
-                Powered by <span className="text-[#EDE9E0] group-hover:text-[#F5C100]">Artispreneur</span>
-              </span>
-            </a>
-            <span className="text-[10px] text-[#555]">
-              ArtistEPKs &mdash; Electronic Press Kits for Independent Artists
-            </span>
-          </div>
-        </footer>
+        <ArtispreneurNav />
+        <main className="flex-1 pt-16">{children}</main>
+        <ArtispreneurFooter />
       </body>
     </html>
   );
 }
+

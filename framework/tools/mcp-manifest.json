@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "artispreneur-epk-tools",
+  "version": "1.0.0",
+  "description": "Model Context Protocol (MCP) Tool Suite for ArtistEPKs Platform",
+  "tools": [
+    {
+      "name": "update_epk",
+      "description": "Patches the live Electronic Press Kit data state in real time. Can update individual or multiple fields.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "template": { "type": "string", "enum": ["main", "booking", "brand"] },
+          "artistName": { "type": "string" },
+          "artistTagline": { "type": "string" },
+          "genre": { "type": "string" },
+          "hometown": { "type": "string" },
+          "bio": { "type": "string" },
+          "heroImageUrl": { "type": "string" },
+          "stats": { "type": "object" },
+          "releases": { "type": "array" },
+          "timeline": { "type": "array" },
+          "pressQuotes": { "type": "array" },
+          "socialLinks": { "type": "object" },
+          "bookingEmail": { "type": "string" }
+        }
+      }
+    },
+    {
+      "name": "fetch_spotify_data",
+      "description": "Pulls verified artist discography, monthly listeners, top tracks, and album cover art directly from Spotify Web API.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "spotifyUrl": { "type": "string", "description": "Full Spotify artist URL or URI" }
+        },
+        "required": ["spotifyUrl"]
+      }
+    },
+    {
+      "name": "scrape_social_profile",
+      "description": "Scrapes and verifies public follower and engagement metrics for Instagram, TikTok, YouTube, or Twitter/X.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "description": "Social media profile URL" },
+          "platform": { "type": "string", "enum": ["instagram", "tiktok", "youtube", "twitter"] }
+        },
+        "required": ["url"]
+      }
+    },
+    {
+      "name": "generate_tech_rider",
+      "description": "Generates a 24-channel audio input list, monitor mix preferences, stage plot layout, and hospitality specs for promoters.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "artistType": { "type": "string" },
+          "bandMembers": { "type": "array", "items": { "type": "string" } },
+          "instruments": { "type": "array", "items": { "type": "string" } },
+          "inEarMonitors": { "type": "boolean" }
+        },
+        "required": ["artistType"]
+      }
+    },
+    {
+      "name": "render_pdf_export",
+      "description": "Renders and compiles a vector multi-page PDF or a single-page Executive One-Sheet with clickable media links.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "epkSlug": { "type": "string" },
+          "format": { "type": "string", "enum": ["multi_page_vector", "one_sheet_executive"] }
+        },
+        "required": ["epkSlug"]
+      }
+    },
+    {
+      "name": "search_promoter_venues",
+      "description": "Searches curated live music venues, festivals, and talent buyers matching the artist's genre and room capacity tier.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "genre": { "type": "string" },
+          "city": { "type": "string" },
+          "capacityMin": { "type": "number" },
+          "capacityMax": { "type": "number" }
+        },
+        "required": ["genre"]
+      }
+    }
+  ]
+}
