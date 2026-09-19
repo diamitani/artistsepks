@@ -26,9 +26,34 @@ export async function GET(request: Request) {
       }
     );
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+    const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error && sessionData?.user) {
+      // Ensure initial profile exists
+      try {
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("user_id", sessionData.user.id)
+          .maybeSingle();
+
+        if (!existingProfile) {
+          await supabase.from("profiles").insert({
+            user_id: sessionData.user.id,
+            profile_data: {
+              email: sessionData.user.email,
+              name: sessionData.user.user_metadata?.full_name || sessionData.user.email?.split("@")[0],
+              plan: "free",
+              created_via: sessionData.user.app_metadata?.provider || "email",
+            },
+          });
+        }
+      } catch (profileErr) {
+        console.warn("Could not sync user profile in callback:", profileErr);
+      }
+
+      // Safe redirect protection: ensure next starts with /
+      const safeNext = next.startsWith("/") ? next : "/dashboard";
+      return NextResponse.redirect(`${origin}${safeNext}`);
     }
   }
 

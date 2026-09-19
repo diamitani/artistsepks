@@ -11,11 +11,16 @@ import {
   ChevronRight,
   Menu,
   X,
+  User,
+  LogOut,
+  LayoutDashboard,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export function ArtispreneurNav() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -25,6 +30,27 @@ export function ArtispreneurNav() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setUser(null);
+  };
 
   const navLinks = [
     { label: "Bio Generator", href: "/#bio-generator", badge: "Free" },
@@ -103,14 +129,40 @@ export function ArtispreneurNav() {
 
           {/* Desktop Actions */}
           <div className="hidden sm:flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              asChild
-              className="text-[#A0A0A0] hover:text-[#EDE9E0] hover:bg-[#181818]"
-            >
-              <Link href="/auth/login">Sign In</Link>
-            </Button>
+            {user ? (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                  className="border-[#C9A227]/30 text-[#EDE9E0] hover:border-[#C9A227] hover:bg-[#C9A227]/10 text-xs"
+                >
+                  <Link href="/dashboard" className="flex items-center gap-1.5">
+                    <LayoutDashboard className="w-3.5 h-3.5 text-[#C9A227]" />
+                    <span>Dashboard</span>
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSignOut}
+                  className="text-[#888] hover:text-[#EF4444] hover:bg-[#1C1C1C] text-xs px-2.5"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                asChild
+                className="text-[#A0A0A0] hover:text-[#EDE9E0] hover:bg-[#181818]"
+              >
+                <Link href="/auth/login">Sign In</Link>
+              </Button>
+            )}
+
             <Button
               variant="outline"
               size="sm"
@@ -181,11 +233,33 @@ export function ArtispreneurNav() {
               </div>
 
               <div className="pt-4 border-t border-[#222] flex flex-col gap-2.5">
-                <Button variant="outline" asChild className="w-full border-[#333]">
-                  <Link href="/auth/login" onClick={() => setOpen(false)}>
-                    Sign In
-                  </Link>
-                </Button>
+                {user ? (
+                  <>
+                    <Button variant="outline" asChild className="w-full border-[#C9A227]/30 text-[#EDE9E0]">
+                      <Link href="/dashboard" onClick={() => setOpen(false)}>
+                        <LayoutDashboard className="w-4 h-4 mr-1.5 inline text-[#C9A227]" />
+                        My Dashboard &amp; EPKs
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        handleSignOut();
+                        setOpen(false);
+                      }}
+                      className="w-full text-[#888] hover:text-[#EF4444]"
+                    >
+                      <LogOut className="w-4 h-4 mr-1.5 inline" />
+                      Sign Out ({user.email?.split("@")[0]})
+                    </Button>
+                  </>
+                ) : (
+                  <Button variant="outline" asChild className="w-full border-[#333]">
+                    <Link href="/auth/login" onClick={() => setOpen(false)}>
+                      Sign In
+                    </Link>
+                  </Button>
+                )}
                 <Button
                   variant="gold"
                   asChild

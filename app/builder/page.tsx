@@ -35,7 +35,10 @@ import {
   Palette,
   Library,
   UserCircle,
+  LayoutDashboard,
+  LogIn,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 // ── Empty EPK data ────────────────────────────────────────────────────────────
 const EMPTY_EPK: EPKData = {
@@ -179,13 +182,60 @@ export default function BuilderPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [showExamples, setShowExamples] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
 
-  // ── Load intake data on mount ───────────────────────────────────────────────
+  // ── Track Supabase Auth State ───────────────────────────────────────────────
   useEffect(() => {
-    // First check for saved profile from profile-wizard
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  // ── Load intake or URL data on mount ────────────────────────────────────────
+  useEffect(() => {
+    // 1. Check URL search parameters (from Bio Generator or external campaign)
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlArtist = params.get("artist");
+      const urlGenre = params.get("genre");
+      const urlBio = params.get("bio");
+      const urlTemplate = params.get("template") as EPKTemplate | null;
+
+      if (urlArtist || urlBio) {
+        setEpk((prev) => ({
+          ...prev,
+          artistName: urlArtist || prev.artistName,
+          genre: urlGenre || prev.genre,
+          bio: urlBio || prev.bio,
+          shortBio: urlBio ? urlBio.slice(0, 160) : prev.shortBio,
+          template: urlTemplate && ["main", "booking", "brand"].includes(urlTemplate) ? urlTemplate : prev.template,
+        }));
+
+        setMessages([
+          {
+            id: uid(),
+            role: "assistant",
+            content: `Welcome to the EPK Studio! I've pre-loaded your ${urlArtist ? `artist profile for "${urlArtist}"` : "generated bio"}. Let's turn this into a world-class press kit with Spotify tracks, 300DPI press photos, and technical riders. What should we add first?`,
+            timestamp: Date.now(),
+          },
+        ]);
+        return;
+      }
+    }
+
+    // 2. Check for saved profile from profile-wizard
     const savedUsername = localStorage.getItem("currentProfileUsername");
     if (savedUsername) {
       fetch(`/api/profile?username=${encodeURIComponent(savedUsername)}`)
@@ -224,7 +274,7 @@ export default function BuilderPage() {
         .catch(() => {});
     }
 
-    // Then check for intake wizard data
+    // 3. Then check for intake wizard data
     const intakeData = sessionStorage.getItem("intakeProfile");
     if (intakeData) {
       try {
@@ -553,6 +603,25 @@ export default function BuilderPage() {
             <UserCircle className="w-3 h-3" />
             Profile
           </Link>
+
+          {/* User Sign In / Dashboard State */}
+          {user ? (
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#C9A227]/30 bg-[#C9A227]/10 text-[#C9A227] text-[10px] font-medium tracking-wider uppercase hover:bg-[#C9A227]/20 transition-colors"
+            >
+              <LayoutDashboard className="w-3 h-3" />
+              <span>Dashboard</span>
+            </Link>
+          ) : (
+            <Link
+              href="/auth/login?redirectTo=/builder"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#333] text-[#AAA] text-[10px] font-medium tracking-wider uppercase hover:border-[#C9A227]/40 hover:text-[#EDE9E0] transition-colors"
+            >
+              <LogIn className="w-3 h-3 text-[#C9A227]" />
+              <span>Sign In</span>
+            </Link>
+          )}
 
           {/* Examples browser */}
           {hasContent && (
