@@ -11,13 +11,6 @@ import {
   ChevronRight,
   Menu,
   X,
-  Layers,
-  Compass,
-  Zap,
-  BarChart3,
-  ShieldCheck,
-  Disc3,
-  ArrowUpRight,
 } from "lucide-react";
 
 export function ArtispreneurNav() {
@@ -51,27 +44,27 @@ export function ArtispreneurNav() {
       )}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between">
-          {/* Brand Logo Lockup */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative w-9 h-9 rounded-lg bg-gradient-to-br from-[#1A1A1A] to-[#0A0A0A] p-1 border border-[#C9A227]/30 group-hover:border-[#C9A227] transition-all duration-300 shadow-md flex items-center justify-center overflow-hidden">
+        <div className="flex items-center justify-between gap-4">
+          {/* Brand Logo Lockup — stable at all viewport sizes */}
+          <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0 min-w-0">
+            <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-br from-[#1A1A1A] to-[#0A0A0A] border border-[#C9A227]/30 group-hover:border-[#C9A227] transition-all duration-300 shadow-md flex items-center justify-center overflow-hidden flex-shrink-0">
               <img
                 src="/artispreneur-logo.png"
                 alt="Artispreneur"
-                className="w-full h-full object-contain filter drop-shadow"
+                className="w-full h-full object-contain p-0.5"
               />
             </div>
-            <div className="flex flex-col leading-tight">
-              <div className="flex items-center gap-1.5">
-                <span className="font-display text-lg tracking-[0.12em] text-[#EDE9E0] uppercase group-hover:text-white transition-colors">
+            <div className="flex flex-col leading-tight flex-shrink-0">
+              <div className="flex items-center gap-1 whitespace-nowrap">
+                <span className="font-display text-base sm:text-lg tracking-[0.10em] text-[#EDE9E0] uppercase group-hover:text-white transition-colors leading-none">
                   Artists
                 </span>
-                <span className="font-display text-lg tracking-[0.12em] text-[#C9A227] uppercase">
+                <span className="font-display text-base sm:text-lg tracking-[0.10em] text-[#C9A227] uppercase leading-none">
                   EPKs
                 </span>
               </div>
-              <span className="text-[9px] text-[#888] tracking-widest uppercase font-medium group-hover:text-[#C0272D] transition-colors">
-                Powered by <span className="text-[#A0A0A0] group-hover:text-[#F5C100]">Artispreneur</span>
+              <span className="text-[8px] sm:text-[9px] text-[#777] tracking-widest uppercase font-medium whitespace-nowrap leading-none mt-0.5">
+                by <span className="text-[#C9A227]/80">Artispreneur</span>
               </span>
             </div>
           </Link>
