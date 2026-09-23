@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
-
-const client = new Anthropic();
+import { streamText } from "ai";
+import { getModel } from "@/lib/ai/model";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -65,28 +64,17 @@ Return ONLY the bio text. No headings, no labels, no preamble.`;
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        const anthropicStream = await client.messages.stream({
-          model: process.env.ANTHROPIC_DEFAULT_SONNET_MODEL || "claude-sonnet-4-5",
-          max_tokens: 1024,
-          system: [
-            {
-              type: "text",
-              text: systemPrompt,
-              cache_control: { type: "ephemeral" },
-            },
-          ],
-          messages: [{ role: "user", content: userPrompt }],
+        const result = streamText({
+          model: getModel(),
+          system: systemPrompt,
+          prompt: userPrompt,
+          maxOutputTokens: 1024,
         });
 
-        for await (const chunk of anthropicStream) {
-          if (
-            chunk.type === "content_block_delta" &&
-            chunk.delta.type === "text_delta"
-          ) {
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ text: chunk.delta.text })}\n\n`)
-            );
-          }
+        for await (const text of result.textStream) {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ text })}\n\n`)
+          );
         }
 
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
