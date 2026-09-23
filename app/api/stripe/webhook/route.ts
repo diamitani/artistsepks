@@ -68,7 +68,8 @@ export async function POST(req: NextRequest) {
 async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
   const customerEmail =
     session.customer_email ?? session.customer_details?.email;
-  const customerId = session.customer as string;
+  const customerId = (session.customer as string | null) ?? null;
+  const userId = session.client_reference_id ?? session.metadata?.user_id ?? null;
   const plan = (session.metadata?.plan) || "epk_edit";
 
   if (!customerEmail) {
@@ -78,32 +79,27 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
 
   const admin = getSupabaseAdmin();
 
+  // Stripe retries webhooks — skip sessions we've already recorded
   const { data: existing } = await admin
     .from("subscriptions")
     .select("id")
-    .eq("stripe_customer_id", customerId)
+    .eq("metadata->>session_id", session.id)
     .maybeSingle();
 
-  if (existing) {
-    await admin
-      .from("subscriptions")
-      .update({
-        plan,
-        status: "complete",
-        stripe_customer_id: customerId,
-        customer_email: customerEmail,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", existing.id);
-  } else {
-    await admin.from("subscriptions").insert({
-      plan,
-      status: "complete",
-      stripe_customer_id: customerId,
-      customer_email: customerEmail,
-      metadata: { session_id: session.id },
-    });
-  }
+  if (existing) return;
+
+  // Each one-time purchase is its own row, linked to the Supabase user so
+  // /api/epk and /api/user/plan (which filter on user_id) can see it.
+  const { error } = await admin.from("subscriptions").insert({
+    user_id: userId,
+    plan,
+    status: "complete",
+    stripe_customer_id: customerId,
+    customer_email: customerEmail,
+    metadata: { session_id: session.id },
+  });
+
+  if (error) throw new Error(`Failed to record purchase ${session.id}: ${error.message}`);
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { streamText, tool, jsonSchema, stepCountIs, type ModelMessage } from "ai";
-import { getModel } from "@/lib/ai/model";
+import { getModel, gatewayProviderOptions } from "@/lib/ai/model";
 import { AGENT_SYSTEM_PROMPT, EPK_UPDATE_TOOL, SPOTIFY_FETCH_TOOL, SOCIAL_SCRAPE_TOOL, FETCH_PAGE_TOOL, ADD_RIDER_TOOL } from "@/lib/agent";
 import { fetchSpotifyData } from "@/lib/spotify";
 import { scrapeSocialProfile } from "@/lib/social-scraper";
@@ -119,6 +119,7 @@ async function* streamGatewayAgent(
 ): AsyncGenerator<{ type: string; data: unknown }> {
   const result = streamText({
     model: getModel(),
+    providerOptions: gatewayProviderOptions,
     system: AGENT_SYSTEM_PROMPT,
     messages,
     tools: AGENT_TOOLS,
@@ -376,9 +377,11 @@ export async function POST(request: NextRequest) {
             const isLastAttempt = attempt === attempts[attempts.length - 1];
 
             if (!isLastAttempt) {
+              // Keep provider error details in the server logs, not the chat
+              console.error(`[agent] ${attempt.name} failed:`, lastError.message);
               sendSSE(controller, encoder, {
                 type: "text",
-                content: `⚠️ ${attempt.name} failed (${lastError.message}). Trying next provider...`,
+                content: "(Switching to backup assistant for a moment.)\n\n",
               });
               continue;
             }

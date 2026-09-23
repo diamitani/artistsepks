@@ -93,7 +93,10 @@ export async function POST(request: NextRequest) {
   }
 
   const body: EPKData = await request.json();
-  const baseSlug = slugify(body.artistName || "artist");
+  // Template suffix goes on before the uniqueness check so it can't collide
+  let baseSlug = slugify(body.artistName || "artist");
+  if (body.template === "booking") baseSlug = `${baseSlug}-booking`;
+  if (body.template === "brand") baseSlug = `${baseSlug}-brand`;
 
   // Ensure unique slug
   let slug = baseSlug;
@@ -108,10 +111,6 @@ export async function POST(request: NextRequest) {
     suffix++;
     slug = `${baseSlug}-${suffix}`;
   }
-
-  // Add template suffix for booking/brand
-  if (body.template === "booking") slug = `${slug}-booking`;
-  if (body.template === "brand") slug = `${slug}-brand`;
 
   const { data, error } = await supabase
     .from("epks")

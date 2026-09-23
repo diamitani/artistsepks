@@ -35,7 +35,7 @@ DROP POLICY IF EXISTS "Users can delete own profile" ON profiles;
 CREATE POLICY "Users can delete own profile" ON profiles FOR DELETE USING (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Service role can manage all profiles" ON profiles;
-CREATE POLICY "Service role can manage all profiles" ON profiles FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role can manage all profiles" ON profiles FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- ── EPKs Table ──────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS epks (
@@ -73,7 +73,7 @@ DROP POLICY IF EXISTS "Users can delete own EPKs" ON epks;
 CREATE POLICY "Users can delete own EPKs" ON epks FOR DELETE USING (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Service role can manage all EPKs" ON epks;
-CREATE POLICY "Service role can manage all EPKs" ON epks FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role can manage all EPKs" ON epks FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- ── Domains Table ───────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS domains (
@@ -105,7 +105,7 @@ DROP POLICY IF EXISTS "Users can delete own domains" ON domains;
 CREATE POLICY "Users can delete own domains" ON domains FOR DELETE USING (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Service role can manage all domains" ON domains;
-CREATE POLICY "Service role can manage all domains" ON domains FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role can manage all domains" ON domains FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- ── Subscriptions Table ─────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS subscriptions (
@@ -131,7 +131,7 @@ DROP POLICY IF EXISTS "Users can view own subscriptions" ON subscriptions;
 CREATE POLICY "Users can view own subscriptions" ON subscriptions FOR SELECT USING (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Service role can manage all subscriptions" ON subscriptions;
-CREATE POLICY "Service role can manage all subscriptions" ON subscriptions FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role can manage all subscriptions" ON subscriptions FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- ── Triggers ─────────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION update_updated_at()

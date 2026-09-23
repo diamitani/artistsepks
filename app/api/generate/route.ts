@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { streamText } from "ai";
-import { getModel } from "@/lib/ai/model";
+import { getModel, gatewayProviderOptions } from "@/lib/ai/model";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -66,15 +66,22 @@ Return ONLY the bio text. No headings, no labels, no preamble.`;
       try {
         const result = streamText({
           model: getModel(),
+          providerOptions: gatewayProviderOptions,
           system: systemPrompt,
           prompt: userPrompt,
           maxOutputTokens: 1024,
         });
 
-        for await (const text of result.textStream) {
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ text })}\n\n`)
-          );
+        // fullStream (not textStream) so Gateway errors reach the client
+        // instead of silently ending with an empty bio.
+        for await (const part of result.fullStream) {
+          if (part.type === "text-delta" && part.text) {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ text: part.text })}\n\n`)
+            );
+          } else if (part.type === "error") {
+            throw part.error instanceof Error ? part.error : new Error(String(part.error));
+          }
         }
 
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
